@@ -1,0 +1,1 @@
+"""RiftHub worker package."""

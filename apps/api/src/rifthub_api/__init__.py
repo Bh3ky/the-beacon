@@ -1,0 +1,1 @@
+"""RiftHub API application package."""

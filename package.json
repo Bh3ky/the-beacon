@@ -1,0 +1,13 @@
+{
+  "name": "rifthub",
+  "private": true,
+  "packageManager": "npm@11.7.0",
+  "workspaces": [
+    "apps/web"
+  ],
+  "scripts": {
+    "web:dev": "npm run dev --workspace @rifthub/web",
+    "api:dev": "uv run --package rifthub-api rifthub-api",
+    "worker:dev": "uv run --package rifthub-worker rifthub-worker"
+  }
+}

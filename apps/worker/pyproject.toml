@@ -1,0 +1,19 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "rifthub-worker"
+version = "0.1.0"
+description = "Background worker runtime for RiftHub."
+requires-python = ">=3.12"
+dependencies = ["rifthub-backend"]
+
+[project.scripts]
+rifthub-worker = "rifthub_worker.main:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/rifthub_worker"]
+
+[tool.uv.sources]
+rifthub-backend = { workspace = true }
