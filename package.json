@@ -8,6 +8,12 @@
   "scripts": {
     "web:dev": "npm run dev --workspace @rifthub/web",
     "api:dev": "uv run --package rifthub-api rifthub-api",
-    "worker:dev": "uv run --package rifthub-worker rifthub-worker"
+    "worker:dev": "uv run --package rifthub-worker rifthub-worker",
+    "api:test": "uv run --package rifthub-api pytest apps/api/tests",
+    "db:up": "docker compose up -d postgres",
+    "db:down": "docker compose down",
+    "db:logs": "docker compose logs -f postgres",
+    "db:upgrade": "uv run --package rifthub-api alembic -c apps/api/alembic.ini upgrade head",
+    "db:downgrade": "uv run --package rifthub-api alembic -c apps/api/alembic.ini downgrade -1"
   }
 }

@@ -7,7 +7,12 @@ name = "rifthub-backend"
 version = "0.1.0"
 description = "Shared backend package for RiftHub runtime services."
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "asyncpg>=0.30,<1.0",
+    "greenlet>=3.2,<4.0",
+    "python-dotenv>=1.1,<2.0",
+    "sqlalchemy>=2.0.36,<3.0",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/rifthub_backend"]

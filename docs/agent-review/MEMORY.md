@@ -2,11 +2,12 @@
 
 ## Current Working Rules
 
-- Current project stage: `Phase 0 - Docs review completed`
-- Next planned stage: `Phase 1 - Project foundation scaffold`
+- Current project stage: `Phase 1 - Project foundation scaffold completed`
+- Next planned stage: `Phase 2 - Database and core models`
 - Review only one source document per session
 - Do not bulk-review docs in a single session
 - Source-doc review order is fixed unless you explicitly change it
+- Log ongoing implementation-review questions and answers under `curious_mind/` at the repo root so the running discussion history is preserved
 - Working process:
 
 ```text
@@ -100,6 +101,7 @@ Architecture style:
 - Postgres is the critical dependency
 - worker failures must be observable
 - secrets must be environment-managed
+- required infrastructure config must fail fast; do not add silent fallback database URLs that can mask env-loading problems
 - moderation and admin actions require auditability
 - ingestion data must be sanitized before rendering
 
@@ -113,6 +115,7 @@ Architecture style:
 - use `docs/agent-review/DEVELOPMENT_TEST_CHECKPOINTS.md` as the recurring phase-by-phase test checklist during implementation
 - use `docs/agent-review/PHASE0_WRAP_UP.md` as the transition summary between docs review and implementation planning
 - use `docs/agent-review/PHASE1_FOUNDATION_PLAN.md` as the source of truth for the initial scaffold pass
+- use `docs/agent-review/PHASE2_DATABASE_PLAN.md` as the source of truth for the next implementation slice
 
 ## Fixed Review Order
 
@@ -138,8 +141,71 @@ Review order status:
 
 - approved initial ingestion source list contents
 
+## Open Implementation Follow-Ups
+
+- DB timestamp/default ownership cleanup before final codebase review and production readiness:
+  - current state in `packages/backend/src/rifthub_backend/db/base.py` mixes ORM-side behavior and DB-side behavior for insert/update timestamp fields
+  - `updated_at` is not purely database-driven today and can drift by write path
+  - revisit this before the final codebase review and before any production deployment decision
+  - preferred direction: make canonical audit timestamps database-owned, especially `created_at` and `updated_at`
+  - do not leave the current mixed responsibility model as the long-term design
+- User identity/index follow-up before final codebase review and production readiness:
+  - `users.post_count` and `users.comment_count` now have non-negative DB constraints and should stay that way
+  - email uniqueness semantics are still a design decision that must be made explicit across schema, validation, and auth flows
+  - decide whether email handling is case-sensitive or canonicalized/case-insensitive, then implement that choice consistently
+  - this decision must be made before signup/login/password-reset/email-verification flows are implemented
+  - review whether `ix_users_role` is still worth keeping once real query patterns are clearer
+- Domain/source trust semantics and indexing follow-up before final codebase review and production readiness:
+  - `domains.submission_count` and `domains.published_post_count` now have non-negative DB constraints and should stay that way
+  - `domains.trust_score > 0` is currently consistent with the schema docs and `sources.trust_score`, so do not change it casually in one model only
+  - later decide whether trust score should remain strictly positive, become non-negative, or move to a bounded scale with explicit business meaning
+  - review whether `ix_domains_is_blocked` should stay as a plain boolean index or become a more targeted partial index once real moderation/query patterns are known
+- Source URL uniqueness and indexing follow-up before final codebase review and production readiness:
+  - `sources.url` uniqueness policy is still unresolved
+  - if each source row is meant to represent one canonical ingestion endpoint, duplicate sources should probably be disallowed
+  - do not add a uniqueness constraint on raw `url` until source URL canonicalization rules are defined
+  - once canonicalization rules are explicit, decide whether uniqueness belongs on raw `url`, normalized `url`, or a composite key such as `(source_type, url)`
+  - review whether `ix_sources_auto_publish` should stay as a plain boolean index or become a targeted partial index if queries mostly care about `auto_publish = true`
+- Vote schema expressiveness follow-up before final codebase review and production readiness:
+  - `vote.py` is structurally clean as-is
+  - later decide whether the unique one-vote-per-user-per-target rule should remain expressed as unique indexes or be rewritten as `UniqueConstraint` for clearer schema intent
+- Moderation action semantics follow-up before final codebase review and production readiness:
+  - `moderation.py` is acceptable as an append-only audit log
+  - action-specific requirements for `reason` and `metadata_json` should be enforced in application/service logic for now
+  - later decide whether moderation workflows are stable enough to justify DB-level checks for some action types
+  - review whether moderation history queries need a composite index such as `(target_type, target_id, created_at)` once real query patterns are known
+- Ingestion workflow semantics and indexing follow-up before final codebase review and production readiness:
+  - `ingestion.py` ownership is strong, and the partial unique index on `(source_id, external_id)` where `external_id is not null` should stay
+  - define allowed `ingestion_status` combinations in service logic, especially the rules tying together `ingestion_status`, `linked_post_id`, and `dedupe_match_post_id`
+  - decide whether `url_normalized` is informational only or a real dedupe key with stronger uniqueness/dedupe semantics
+  - revisit `discovered_at` default ownership during the broader timestamp/default cleanup pass
+  - review queue-oriented partial indexes later for awaiting-review, failed-for-retry, and other status-specific ingestion worker paths once real query patterns exist
+- Post dedupe and lifecycle follow-up before final codebase review and production readiness:
+  - `posts.bookmark_count` and `posts.view_count` now have non-negative DB constraints and should stay that way
+  - `posts.is_ingested` and `posts.ingested_from_source_id` now have a coherence constraint, but later revisit whether the boolean should exist at all or be inferred from source linkage
+  - `posts.slug` is intentionally not globally unique under the current `id + slug` routing design; revisit only if route semantics change
+  - decide explicit `posts.url_normalized` duplicate policy before production, especially for link-post dedupe and repost-window behavior
+  - decide whether non-job posts must require `job_expires_at is null` and whether job posts need stricter expiry semantics
+  - review active-post partial index opportunities later for rank, category-recency, type-recency, and active job expiry queries once real query patterns are known
+- API packaging and tooling follow-up before final codebase review and production readiness:
+  - keep `alembic` in `apps/api/pyproject.toml` as long as the migration environment and command surface continue to live under `apps/api`
+  - if migration ownership moves into `packages/backend`, revisit whether Alembic should move with it
+  - add `pytest-asyncio` later if direct async test coverage grows beyond the current sync/anyio-driven test style
+  - consider `uvicorn[standard]` later only if dev/runtime ergonomics justify the extra dependency surface
+
 ## Resolved Product Decisions
 
+- Phase 2 DB session lifecycle note:
+  - problem:
+    - `packages/backend/src/rifthub_backend/db/session.py` originally cached the async engine and session factory as module globals with first-call-wins behavior
+    - if one startup or test path initialized the cache with one `Settings` value and a later path passed a different `Settings`, the later call silently reused the old engine or factory
+    - this created hidden cross-test contamination and made in-process reconfiguration unsafe
+  - solution:
+    - cache reuse is now allowed only when the effective DB config matches the already-initialized cache
+    - the effective cache key is `database_url` plus `sql_echo`
+    - if a later call tries to use different DB settings, `get_engine()` and `get_session_factory()` now raise a `RuntimeError` that tells the caller to run `dispose_engine()` first
+    - `dispose_engine()` now clears cached module state before awaiting disposal so a failing dispose does not leave stale cache state behind
+    - targeted regression tests live in `apps/api/tests/test_db_session.py`
 - moderation must be in place early enough to test and tune during MVP development
 - jobs are visible in the first MVP
 - v1 auth mode is HTTP-only cookie session

@@ -29,6 +29,15 @@ Install Python workspace dependencies:
 uv sync --all-packages
 ```
 
+Create a local runtime env file before starting services:
+
+```bash
+cp .env.example .env
+```
+
+Then edit `.env` for your local machine.
+The Python services load `.env` at runtime, not `.env.example`.
+
 Run the three scaffolded runtimes from the repo root:
 
 ```bash
@@ -38,3 +47,44 @@ npm run worker:dev
 ```
 
 The API exposes `GET /health` once started.
+
+## Database Workflow
+
+Phase 2 adds PostgreSQL, SQLAlchemy, and Alembic.
+Local Python runtime settings now load from the repo-root `.env`.
+
+Start local Postgres with Docker:
+
+```bash
+npm run db:up
+```
+
+Watch Postgres logs:
+
+```bash
+npm run db:logs
+```
+
+Run the API test suite:
+
+```bash
+npm run api:test
+```
+
+Apply the latest database migration:
+
+```bash
+npm run db:upgrade
+```
+
+Roll back one migration:
+
+```bash
+npm run db:downgrade
+```
+
+Stop the Docker services when done:
+
+```bash
+npm run db:down
+```
