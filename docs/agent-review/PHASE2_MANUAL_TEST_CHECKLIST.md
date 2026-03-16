@@ -500,7 +500,6 @@ VALUES ('cccccccc-cccc-cccc-cccc-cccccccccccc', 'user_one', 'dup@example.com', '
 
 INSERT INTO users (id, username, email, password_hash)
 VALUES ('dddddddd-dddd-dddd-dddd-dddddddddddd', 'user_two', 'dup@example.com', 'hashed');
-
 ROLLBACK;
 ```
 
@@ -792,6 +791,27 @@ npm run db:upgrade
 Expected result:
 
 - the schema is recreated cleanly
+
+## Validation Result
+
+Manual validation completed on `2026-03-16`.
+
+Outcome:
+
+- automated API test suite passed
+- Docker Postgres startup was verified
+- Alembic SQL render succeeded
+- upgrade to `head` succeeded
+- expected tables, enum types, constraints, and indexes were verified in the live DB
+- manual data-validation scenarios behaved as expected
+- API startup and `/health` check succeeded
+- downgrade to `base` succeeded
+- re-upgrade to `head` succeeded
+
+Environment note:
+
+- local validation was temporarily confused by a host-port conflict between Docker Postgres and a separate local Postgres installation on `5432`
+- host-DSN `psql` verification against the same connection path used by Alembic was the reliable source of truth during validation
 
 ## Exit Criteria
 
