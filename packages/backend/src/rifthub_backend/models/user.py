@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from .moderation import ModerationAction
     from .post import Post
     from .session import UserSession
+    from .verification import UserVerificationToken
     from .vote import CommentVote, PostVote
 
 
@@ -44,8 +45,8 @@ class User(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     status: Mapped[UserStatus] = mapped_column(
         USER_STATUS_ENUM,
         nullable=False,
-        default=UserStatus.ACTIVE,
-        server_default=text(f"'{UserStatus.ACTIVE.value}'"),
+        default=UserStatus.PENDING,
+        server_default=text(f"'{UserStatus.PENDING.value}'"),
     )
     karma: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default=text("0"))
     post_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default=text("0"))
@@ -69,3 +70,6 @@ class User(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         back_populates="moderator",
     )
     sessions: Mapped[list["UserSession"]] = relationship(back_populates="user")
+    verification_tokens: Mapped[list["UserVerificationToken"]] = relationship(
+        back_populates="user"
+    )

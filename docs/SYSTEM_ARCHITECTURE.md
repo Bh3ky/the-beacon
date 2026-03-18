@@ -966,6 +966,7 @@ Before public launch, the system should satisfy:
 - moderation logging verified
 - auth and role checks verified
 - CSRF and cross-origin cookie behavior verified
+- verification email delivery verified with real provider credentials and a verified sending domain
 - source polling failure alerts configured
 - error monitoring enabled
 - basic backups confirmed

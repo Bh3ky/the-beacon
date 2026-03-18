@@ -151,9 +151,10 @@ Review order status:
   - do not leave the current mixed responsibility model as the long-term design
 - User identity/index follow-up before final codebase review and production readiness:
   - `users.post_count` and `users.comment_count` now have non-negative DB constraints and should stay that way
-  - email uniqueness semantics are still a design decision that must be made explicit across schema, validation, and auth flows
-  - decide whether email handling is case-sensitive or canonicalized/case-insensitive, then implement that choice consistently
-  - this decision must be made before signup/login/password-reset/email-verification flows are implemented
+  - email handling is now locked for auth flows: trim surrounding whitespace, lowercase the full address, and do not strip dots or plus aliases
+  - apply that canonicalization consistently before both register writes and login lookups
+  - the DB `users.email` uniqueness guarantee should continue to apply to the canonicalized stored value
+  - Path B auth is now verification-first: new accounts begin in `pending` state and do not receive authenticated privileges until verification completes
   - review whether `ix_users_role` is still worth keeping once real query patterns are clearer
 - Domain/source trust semantics and indexing follow-up before final codebase review and production readiness:
   - `domains.submission_count` and `domains.published_post_count` now have non-negative DB constraints and should stay that way
@@ -192,6 +193,34 @@ Review order status:
   - if migration ownership moves into `packages/backend`, revisit whether Alembic should move with it
   - add `pytest-asyncio` later if direct async test coverage grows beyond the current sync/anyio-driven test style
   - consider `uvicorn[standard]` later only if dev/runtime ergonomics justify the extra dependency surface
+- Verification email production-readiness follow-up before launch:
+  - the codebase now has a dormant `resend` verification-delivery adapter
+  - do not switch `RIFTHUB_VERIFICATION_DELIVERY_MODE` to `resend` until a real domain is purchased and verified in Resend
+  - production/staging will require:
+    - verified sending domain in Resend
+    - `RIFTHUB_RESEND_API_KEY`
+    - `RIFTHUB_VERIFICATION_FROM_EMAIL` on that verified domain
+  - local development should continue using `mailpit` or `log`
+- Read-layer public payload and safety follow-up:
+  - public post-read responses no longer expose `url_normalized` or `is_ingested`
+  - keep those fields internal unless a future public contract intentionally reintroduces provenance/dedupe metadata
+  - `get_post_comments()` now applies a temporary hard cap of `500` rows per request until real comment pagination is designed
+  - malformed feed cursors should continue to fail with `400 validation_error`, not leak raw field parsing errors
+  - `_viewer_can_edit()` in the read layer is currently correct but relies on cross-enum `StrEnum` value compatibility; later refactor it into explicit post/comment helpers for readability
+- Creation-layer hardening decisions:
+  - normalized link URLs now strip fragments before storage and dedupe checks
+  - active link dedupe now has a DB-backed partial unique index on `posts.url_normalized`
+  - duplicate-link integrity failures should continue to map to `409 duplicate_submission`
+  - slug generation is intentionally ASCII-only in v1; transliteration is a future improvement
+- Verification-token invariants:
+  - the one-active-token-per-user rule now has a DB-backed partial unique index on `user_verification_tokens.user_id` where `consumed_at IS NULL`
+  - resend-verification serializes against the pending user row before rotating tokens
+  - keep service and metadata coverage around this invariant in place
+- Phase 4 frontend foundation:
+  - the editorial UI token layer is now established in `apps/web/app/globals.css`
+  - Slice 1 uses the locked dark/orange palette from the mockups, not ad hoc Tailwind defaults
+  - because network-dependent Google font fetches break local/offline builds here, the current implementation uses explicit serif/mono fallback stacks instead of `next/font/google`
+  - exact DM Serif Display / IBM Plex Mono delivery can be revisited later via vendored/local fonts if needed
 
 ## Resolved Product Decisions
 
@@ -257,3 +286,28 @@ Review order status:
 - temporary development ingestion source seed lives at `backend/dev/approved_sources.dev.json` until the real approved source list is finalized
 - planned repo rename: `the-beacon` -> `rifthub`
 - planned shared Python package import name: `rifthub_backend`
+- Phase 3 core API scope is implemented end to end:
+  - auth/session foundation
+  - feeds and read endpoints
+  - post/comment creation
+  - post/comment voting
+- verification-first auth is locked for v1:
+  - register creates `pending` users only
+  - verify activates the account and issues the session
+  - login rejects pending users with `account_pending_verification`
+  - logout is idempotent `204`
+- verification delivery posture:
+  - local dev prefers `log` or `mailpit`
+  - tests use `noop`
+  - dormant `resend` adapter is wired but must not be enabled until domain ownership, DNS verification, and API key setup are complete
+- auth/session security posture now explicitly includes:
+  - session-bound CSRF
+  - origin validation on mutating routes
+  - old session token must be invalid after logout
+  - login unknown-email path performs dummy password verification for better timing parity
+- cookie expectations are environment-specific by design:
+  - local HTTP development should not expect `Secure=True`
+  - production/staging HTTPS should expect `Secure=True`
+- shared write-access restriction remains a backend/service-layer helper, not a FastAPI dependency
+- current focused Phase 3 validation baseline after hardening is `106 passed`
+- when fixing FastAPI/Starlette callback typing issues, check the official framework docs and Python typing docs first; prefer framework-compatible callback signatures plus `Protocol`-based shared helpers over ad hoc `object` typing or cast-heavy patches

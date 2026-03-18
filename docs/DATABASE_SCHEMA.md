@@ -124,6 +124,7 @@ admin
 ## 5.2 `user_status_enum`
 
 ```text
+pending
 active
 suspended
 banned
@@ -283,7 +284,7 @@ Stores registered user accounts.
 | `password_hash` | TEXT | no | hashed password only |
 | `bio` | TEXT | yes | optional profile bio |
 | `role` | `user_role_enum` | no | default `user` |
-| `status` | `user_status_enum` | no | default `active` |
+| `status` | `user_status_enum` | no | default `pending`; becomes `active` after verification |
 | `karma` | INTEGER | no | default `0` |
 | `post_count` | INTEGER | no | default `0` |
 | `comment_count` | INTEGER | no | default `0` |
@@ -297,11 +298,13 @@ Stores registered user accounts.
 
 - `username` unique
 - `email` unique
+- `email` should be stored in canonical lowercased form by the auth service before write and lookup
 - `karma >= 0` is not required; karma may go negative later if downvotes or moderation penalties exist
 - recommended username check:
   - length 3–32
   - lowercase canonical storage
   - allowed chars: `[a-z0-9_]+`
+- `status = pending` means the account exists but must not receive normal authenticated privileges until verification completes
 
 **Indexes**
 
@@ -735,7 +738,27 @@ Because v1 auth uses HTTP-only cookie sessions, a session table is recommended u
 
 This should be treated as a practical MVP table under the current auth direction.
 
-## 8.2 `post_score_history`
+## 8.2 `user_verification_tokens`
+
+Because registration is verification-first in v1, a verification token table is recommended.
+
+**Suggested columns**
+
+- `id`
+- `user_id`
+- `token_hash`
+- `expires_at`
+- `consumed_at`
+- `created_at`
+
+**Notes**
+
+- store only a hash of the verification token, never the raw token
+- verification tokens should be single-use
+- expired or consumed tokens must not activate accounts
+- this table is auth-owned and should be introduced with the Phase 3 auth slice
+
+## 8.3 `post_score_history`
 
 Useful for observability and ranking tuning.
 
@@ -751,7 +774,7 @@ Useful for observability and ranking tuning.
 
 This table is optional and should be sampled, not written on every single event if write volume becomes high.
 
-## 8.3 `daily_stats`
+## 8.4 `daily_stats`
 
 Useful for admin dashboards and ecosystem metrics.
 
@@ -999,7 +1022,7 @@ create table users (
   password_hash text not null,
   bio text,
   role user_role_enum not null default 'user',
-  status user_status_enum not null default 'active',
+  status user_status_enum not null default 'pending',
   karma integer not null default 0,
   post_count integer not null default 0,
   comment_count integer not null default 0,

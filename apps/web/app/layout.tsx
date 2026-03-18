@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "RiftHub",
-  description: "Phase 1 scaffold for the RiftHub web app.",
+  description: "Community-ranked discovery and discussion platform for African tech.",
 };
 
 export default function RootLayout({

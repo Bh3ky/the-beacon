@@ -20,6 +20,7 @@ user_role_enum = postgresql.ENUM(
     create_type=False,
 )
 user_status_enum = postgresql.ENUM(
+    "pending",
     "active",
     "suspended",
     "banned",
@@ -165,7 +166,7 @@ def upgrade() -> None:
         sa.Column("password_hash", sa.Text(), nullable=False),
         sa.Column("bio", sa.Text(), nullable=True),
         sa.Column("role", user_role_enum, server_default=sa.text("'user'"), nullable=False),
-        sa.Column("status", user_status_enum, server_default=sa.text("'active'"), nullable=False),
+        sa.Column("status", user_status_enum, server_default=sa.text("'pending'"), nullable=False),
         sa.Column("karma", sa.Integer(), server_default=sa.text("0"), nullable=False),
         sa.Column("post_count", sa.Integer(), server_default=sa.text("0"), nullable=False),
         sa.Column("comment_count", sa.Integer(), server_default=sa.text("0"), nullable=False),

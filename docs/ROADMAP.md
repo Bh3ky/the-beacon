@@ -216,7 +216,9 @@ Reference:
 
 ```http
 POST /auth/register
+POST /auth/verify
 POST /auth/login
+POST /auth/logout
 GET /auth/me
 ```
 
@@ -260,8 +262,23 @@ Auth for v1 should use HTTP-only cookie sessions with:
 - `HttpOnly`
 - `Secure`
 - `SameSite=Lax` or `SameSite=Strict` where possible
-- server-side session validation or a signed session token
-- CSRF protection for state-changing requests
+- server-side validation of opaque database-backed sessions
+- session-bound CSRF protection for state-changing requests
+- origin validation for browser-based mutating requests
+
+Registration for v1 should be verification-first:
+
+- `POST /auth/register` creates a pending account
+- no authenticated session is issued until verification completes
+- `POST /auth/verify` completes verification and issues the authenticated session
+- `POST /auth/resend-verification` rotates the pending account's active verification token and retries delivery without creating a session
+
+Auth endpoints should also carry dedicated rate limits from the start, especially:
+
+- register
+- resend-verification
+- verify
+- login
 
 ---
 
@@ -550,6 +567,8 @@ Before launch, confirm:
 - spam protection is active
 - moderation is working
 - deployment is stable
+- verification email delivery is using a verified sending domain
+- `RIFTHUB_RESEND_API_KEY` is configured in staging and production
 
 ---
 

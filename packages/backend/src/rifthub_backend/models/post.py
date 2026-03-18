@@ -68,6 +68,12 @@ class Post(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         Index("ix_posts_post_type_status_submitted_at", "post_type", "status", "submitted_at"),
         Index("ix_posts_domain_id", "domain_id"),
         Index("ix_posts_url_normalized", "url_normalized"),
+        Index(
+            "uq_posts_active_link_url_normalized",
+            "url_normalized",
+            unique=True,
+            postgresql_where=text("post_type = 'link' AND status = 'active' AND url_normalized IS NOT NULL"),
+        ),
     )
 
     author_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)

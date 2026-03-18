@@ -892,6 +892,7 @@ GraphQL will be introduced in v2.
 
 Auth
 - `POST /auth/register`
+- `POST /auth/verify`
 - `POST /auth/login`
 - `POST /auth/logout`
 - `GET /auth/me`

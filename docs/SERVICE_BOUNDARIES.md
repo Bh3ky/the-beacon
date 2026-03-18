@@ -82,16 +82,19 @@ Own authentication and session-related concerns.
 ## 5.2 Responsibilities
 
 - register user
+- verify user email/account
 - login/logout
 - current session resolution
 - password hashing/verification
 - session creation/invalidation
+- verification token issuance/consumption
 - CSRF/session bootstrap helpers
 - role resolution helpers
 
 ## 5.3 Owns
 
 - `user_sessions` and auth/session models if local
+- verification token storage if local
 - auth-related service code
 - password policy
 

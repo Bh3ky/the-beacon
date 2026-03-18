@@ -9,6 +9,7 @@ from .post import Post
 from .session import UserSession
 from .source import Source
 from .user import User
+from .verification import UserVerificationToken
 from .vote import CommentVote, PostVote
 
 __all__ = [
@@ -23,4 +24,5 @@ __all__ = [
     "Source",
     "User",
     "UserSession",
+    "UserVerificationToken",
 ]

@@ -87,14 +87,23 @@ Accept: application/json
 Recommended v1 approach:
 
 - HTTP-only cookie session auth
+- verification-first registration
 
 Required cookie/session properties:
 
 - `HttpOnly`
 - `Secure`
 - `SameSite=Lax` or `SameSite=Strict` where possible
-- server-side session validation or signed session token
-- CSRF protection for state-changing requests
+- server-side validation of an opaque session token
+- CSRF protection for state-changing requests using a session-bound double-submit token
+- origin validation for browser-based mutating requests
+
+Registration behavior for v1:
+
+- `POST /auth/register` creates a pending account
+- no authenticated session is issued until verification completes
+- `POST /auth/verify` completes verification, creates the session, and sets the auth/CSRF cookies
+- `POST /auth/resend-verification` rotates the active verification token for a pending account and retries delivery without authenticating the user
 
 Because frontend and backend may be hosted separately (`Vercel` + `Railway`), cross-origin cookie behavior and CSRF defenses must be designed explicitly. The API spec below assumes browser clients authenticate with a session cookie.
 
@@ -182,6 +191,9 @@ All errors should use a consistent envelope.
 | `rate_limited`         | rate limit exceeded           |
 | `flag_not_found`       | flag does not exist           |
 | `source_not_found`     | source does not exist         |
+| `account_pending_verification` | account exists but is not yet verified |
+| `verification_token_invalid` | verification token is invalid |
+| `verification_token_expired` | verification token has expired |
 
 
 # 5. Response Envelope Strategy
@@ -411,7 +423,7 @@ POST /auth/register
 
 **Purpose**
 
-Create a new user account.
+Create a new pending user account.
 
 **Request body**
 
@@ -436,6 +448,57 @@ Create a new user account.
 
 ```JSON
 {
+  "verification_required": true,
+  "user": {
+    "id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+    "username": "bheki",
+    "bio": null,
+    "role": "user",
+    "status": "pending",
+    "karma": 0,
+    "post_count": 0,
+    "comment_count": 0,
+    "avatar_url": null,
+    "created_at": "2026-03-13T18:00:00Z",
+    "last_active_at": "2026-03-13T18:00:00Z"
+  }
+}
+```
+
+The server does **not** set an authenticated session cookie on register. Verification must complete first.
+
+**Failure cases**
+
+- `409 duplicate username`
+- `409 duplicate email`
+- `422 invalid username/email/password`
+
+## 8.2 Verify
+
+**Endpoint**
+
+```http
+POST /auth/verify
+```
+
+**Purpose**
+
+Complete account verification and start the authenticated session.
+
+**Request body**
+
+```JSON
+{
+  "token": "opaque-verification-token"
+}
+```
+
+**Success response**
+
+**200 OK**
+
+```JSON
+{
   "user": {
     "id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
     "username": "bheki",
@@ -447,18 +510,56 @@ Create a new user account.
     "comment_count": 0,
     "avatar_url": null,
     "created_at": "2026-03-13T18:00:00Z",
-    "last_active_at": "2026-03-13T18:00:00Z"
+    "last_active_at": "2026-03-13T18:05:00Z"
   }
 }
 ```
 
+The server should set the authenticated session cookie and CSRF cookie on successful verification.
+
 **Failure cases**
 
-- `409 duplicate username`
-- `409 duplicate email`
-- `422 invalid username/email/password`
+- `400 verification_token_invalid`
+- `400 verification_token_expired`
+- `409 account already verified`
 
-# 8.2 Login
+## 8.3 Resend verification
+
+**Endpoint**
+
+```http
+POST /auth/resend-verification
+```
+
+**Purpose**
+
+Rotate the active verification token for a pending account and attempt delivery again.
+
+**Request body**
+
+```JSON
+{
+  "email": "b@example.com"
+}
+```
+
+**Success response**
+
+**204 No Content**
+
+Rules:
+
+- the server does not authenticate the user
+- the server does not set auth or CSRF cookies
+- if a matching pending account exists, prior unconsumed verification token(s) are invalidated and a new one is issued
+- if the account does not exist or is no longer pending, the endpoint still returns `204`
+
+**Failure cases**
+
+- `422 invalid email`
+- `429 rate limited`
+
+# 8.4 Login
 
 **Endpoint**
 
@@ -502,10 +603,11 @@ The server should set the session cookie with `Set-Cookie` on successful login. 
 **Failure cases**
 
 - `401 invalid credentials`
+- `403 account_pending_verification`
 - `403 account suspended or banned`
 
 
-## 8.3 Logout
+## 8.5 Logout
 
 **Endpoint**
 
@@ -517,9 +619,9 @@ POST /auth/logout
 
 **204 No Content**
 
-The server should invalidate the session server-side and clear the session cookie.
+The server should invalidate the current session server-side if present, clear the session cookie, clear the CSRF cookie, and still return `204` even when no valid session exists.
 
-## 8.4 Current session
+## 8.6 Current session
 
 **Endpoint**
 
@@ -556,6 +658,8 @@ Return current authenticated user.
 **Failure cases**
 
 **401 unauthenticated**
+
+If the request is authenticated but the CSRF cookie is missing, the server may refresh the CSRF cookie in the response.
 
 
 # 9. User Endpoints

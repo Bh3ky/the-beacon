@@ -270,6 +270,9 @@ Examples:
 
 | Endpoint | Limit |
 |---|---|
+| register | 3/hour |
+| resend verification | 3/hour |
+| verify | 10/hour |
 login | 5/min |
 post submission | 5/hour |
 comment creation | 20/min |

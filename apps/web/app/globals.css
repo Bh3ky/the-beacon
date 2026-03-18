@@ -1,7 +1,77 @@
 @import "tailwindcss";
 
 :root {
-  color-scheme: light;
+  color-scheme: dark;
+  --color-bg: #0d0b08;
+  --color-surface: #110e0b;
+  --color-surface-hover: #130f0c;
+  --color-border: #1e1a16;
+  --color-border-strong: #2a2218;
+  --color-text: #f0ebe3;
+  --color-text-muted: #7a6255;
+  --color-text-dim: #4d3e33;
+  --color-text-faint: #2e2420;
+  --color-accent: #e8521a;
+  --color-accent-hover: #ff6b35;
+  --color-accent-dim: #9e3a12;
+  --color-nav-text-on-accent: #0d0b08;
+  --color-success: #4ade80;
+  --color-warning: #facc15;
+  --color-error: #f87171;
+  --color-info: #60a5fa;
+  --color-opinion: #c084fc;
+  --badge-funding-bg: #1a2e1a;
+  --badge-funding-text: #4ade80;
+  --badge-show-bg: #2e1a0a;
+  --badge-show-text: #fb923c;
+  --badge-ask-bg: #0a1a2e;
+  --badge-ask-text: #60a5fa;
+  --badge-opinion-bg: #2a1a2e;
+  --badge-opinion-text: #c084fc;
+  --badge-policy-bg: #2e2a0a;
+  --badge-policy-text: #facc15;
+  --badge-news-bg: #1a1a1a;
+  --badge-news-text: #a1a1aa;
+  --badge-job-bg: #2e1a1a;
+  --badge-job-text: #f87171;
+  --indent-1: #e8521a;
+  --indent-2: #c4782a;
+  --indent-3: #8b6b3d;
+  --indent-4: #5c4e3a;
+  --indent-5: #3d3530;
+  --fs-heading-hero: 38px;
+  --fs-heading-form: 26px;
+  --fs-heading-post: 22px;
+  --fs-heading-success: 20px;
+  --fs-heading-brand: 18px;
+  --fs-body-feed-title: 15px;
+  --fs-body-comment: 14px;
+  --fs-body-input: 13px;
+  --fs-body-base: 12px;
+  --fs-meta: 11px;
+  --fs-label: 10px;
+  --fs-badge: 9px;
+  --fs-stat-number: 24px;
+  --fs-stat-secondary: 20px;
+  --fs-brand-compact: 17px;
+  --fs-logo-letter: 16px;
+  --font-display:
+    "DM Serif Display",
+    "Iowan Old Style",
+    "Palatino Linotype",
+    "Book Antiqua",
+    Georgia,
+    serif;
+  --font-mono:
+    "IBM Plex Mono",
+    "SFMono-Regular",
+    "SF Mono",
+    "Cascadia Code",
+    "Fira Code",
+    Consolas,
+    "Liberation Mono",
+    Menlo,
+    monospace;
 }
 
 * {
@@ -9,9 +79,53 @@
 }
 
 html {
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text);
 }
 
 body {
+  min-height: 100vh;
   margin: 0;
+  background:
+    radial-gradient(circle at top, rgba(232, 82, 26, 0.08), transparent 34%),
+    linear-gradient(180deg, rgba(13, 11, 8, 0.98), rgba(13, 11, 8, 1));
+  color: var(--color-text);
+  font-family: var(--font-mono), monospace;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+.font-display {
+  font-family: var(--font-display), serif;
+}
+
+.font-mono {
+  font-family: var(--font-mono), monospace;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--color-accent) 65%, transparent);
+  color: var(--color-nav-text-on-accent);
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: var(--color-text-faint);
 }

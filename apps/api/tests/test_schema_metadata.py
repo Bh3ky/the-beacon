@@ -1,10 +1,11 @@
 from sqlalchemy import ForeignKeyConstraint, UniqueConstraint
 from sqlalchemy.dialects import postgresql
+from sqlalchemy.orm import configure_mappers
 from sqlalchemy.schema import CreateIndex, CreateTable
 
 import rifthub_backend.models  # noqa: F401
 from rifthub_backend.db.base import Base
-from rifthub_backend.db.types import ALL_ENUM_TYPES
+from rifthub_backend.db.types import ALL_ENUM_TYPES, UserStatus
 
 
 def test_metadata_contains_phase_two_tables() -> None:
@@ -21,6 +22,10 @@ def test_metadata_contains_phase_two_tables() -> None:
         "ingestion_items",
         "user_sessions",
     }.issubset(Base.metadata.tables.keys())
+
+
+def test_metadata_contains_phase_three_auth_tables() -> None:
+    assert "user_verification_tokens" in Base.metadata.tables
 
 
 def test_required_enum_names_are_registered() -> None:
@@ -42,6 +47,12 @@ def test_required_enum_names_are_registered() -> None:
     }
 
 
+def test_user_status_enum_includes_pending() -> None:
+    assert UserStatus.PENDING.value in next(
+        enum_type.enums for enum_type in ALL_ENUM_TYPES if enum_type.name == "user_status_enum"
+    )
+
+
 def test_metadata_compiles_for_postgresql() -> None:
     dialect = postgresql.dialect()
 
@@ -51,9 +62,14 @@ def test_metadata_compiles_for_postgresql() -> None:
             assert str(CreateIndex(index).compile(dialect=dialect))
 
 
+def test_sqlalchemy_mappers_configure_successfully() -> None:
+    configure_mappers()
+
+
 def test_partial_indexes_are_present() -> None:
     flags = Base.metadata.tables["flags"]
     ingestion_items = Base.metadata.tables["ingestion_items"]
+    posts = Base.metadata.tables["posts"]
 
     flags_index = next(index for index in flags.indexes if index.name == "uq_flags_open_reporter_target_reason")
     ingestion_index = next(
@@ -61,11 +77,29 @@ def test_partial_indexes_are_present() -> None:
         for index in ingestion_items.indexes
         if index.name == "uq_ingestion_items_source_id_external_id"
     )
+    posts_index = next(index for index in posts.indexes if index.name == "uq_posts_active_link_url_normalized")
 
     assert flags_index.unique is True
     assert flags_index.dialect_options["postgresql"]["where"] is not None
     assert ingestion_index.unique is True
     assert ingestion_index.dialect_options["postgresql"]["where"] is not None
+    assert posts_index.unique is True
+    assert posts_index.dialect_options["postgresql"]["where"] is not None
+
+
+def test_user_verification_token_indexes_are_present() -> None:
+    verification_tokens = Base.metadata.tables["user_verification_tokens"]
+    index_names = {index.name for index in verification_tokens.indexes}
+    active_token_index = next(
+        index
+        for index in verification_tokens.indexes
+        if index.name == "uq_user_verification_tokens_active_user_id"
+    )
+
+    assert "ix_user_verification_tokens_user_id" in index_names
+    assert "ix_user_verification_tokens_expires_at" in index_names
+    assert active_token_index.unique is True
+    assert active_token_index.dialect_options["postgresql"]["where"] is not None
 
 
 def test_user_counter_constraints_are_present() -> None:
@@ -74,6 +108,16 @@ def test_user_counter_constraints_are_present() -> None:
 
     assert "ck_users_post_count_non_negative" in constraint_names
     assert "ck_users_comment_count_non_negative" in constraint_names
+
+
+def test_users_status_defaults_to_pending() -> None:
+    users = Base.metadata.tables["users"]
+    status = users.c.status
+
+    assert status.default is not None
+    assert status.default.arg is UserStatus.PENDING
+    assert status.server_default is not None
+    assert "'pending'" in str(status.server_default.arg)
 
 
 def test_domain_counter_constraints_are_present() -> None:

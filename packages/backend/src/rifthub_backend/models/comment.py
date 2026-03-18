@@ -89,7 +89,11 @@ class Comment(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     author: Mapped["User"] = relationship(back_populates="comments")
     parent_comment: Mapped["Comment | None"] = relationship(
         remote_side="Comment.id",
+        foreign_keys="Comment.parent_comment_id",
         back_populates="replies",
     )
-    replies: Mapped[list["Comment"]] = relationship(back_populates="parent_comment")
+    replies: Mapped[list["Comment"]] = relationship(
+        back_populates="parent_comment",
+        foreign_keys="Comment.parent_comment_id",
+    )
     comment_votes: Mapped[list["CommentVote"]] = relationship(back_populates="comment")

@@ -2,13 +2,9 @@
 
 ## Purpose
 
-This file defines the execution plan for **Phase 3: Core API** after Phase 2 database and migration validation completed successfully.
+This file defines the **final execution plan** for **Phase 3: Core API** after Phase 2 database and migration validation completed successfully.
 
-This is a planning note, not an implementation log. The intended workflow for Phase 3 is:
-
-1. plan
-2. review each slice
-3. implement only after agreement
+This is the implementation-ready planning note for the phase. It captures the decisions that are now locked before coding starts.
 
 ---
 
@@ -63,7 +59,7 @@ The API should be usable through HTTP alone, without frontend-specific shortcuts
 
 ## Boundary Rules For Phase 3
 
-These rules are locked unless explicitly reconsidered during review:
+These rules are locked unless explicitly revised in the docs first:
 
 1. Route handlers stay thin.
    Business rules belong in domain service code, not FastAPI endpoints.
@@ -85,9 +81,13 @@ These rules are locked unless explicitly reconsidered during review:
 
 ### Slice 1: Auth and Session Foundation
 
+Status: **implemented**
+
 Implement first:
 
 - `POST /auth/register`
+- `POST /auth/resend-verification`
+- `POST /auth/verify`
 - `POST /auth/login`
 - `POST /auth/logout`
 - `GET /auth/me`
@@ -95,12 +95,17 @@ Implement first:
 Supporting work included in this slice:
 
 - password hashing and verification
+- account verification flow
+- dedicated verification-token storage
+- verification delivery port and environment-specific delivery adapters
+- resend-verification flow for pending accounts
 - session creation in `user_sessions`
 - session invalidation
 - current-session resolution dependency/helper
 - secure cookie issuance
-- CSRF token strategy for mutating requests
+- session-bound CSRF token strategy for mutating requests
 - origin-validation policy for browser-based state-changing requests
+- auth rate limiting
 
 Why first:
 
@@ -108,11 +113,36 @@ Why first:
 - security mistakes here would leak into every later slice
 - `SERVICE_BOUNDARIES.md` makes identity/session ownership explicit
 
-Open decision to settle during auth review:
+Locked direction from review:
 
-- final email canonicalization and uniqueness policy for auth flows
+- Path B: registration is verification-first
+- `POST /auth/register` creates a non-authenticated pending account
+- no authenticated session is issued until verification completes
+- `POST /auth/verify` completes verification
+- `POST /auth/resend-verification` rotates the active pending verification token without creating a session
+- verification completion is what creates the session, sets the auth cookie, and sets the CSRF cookie
+- verification tokens live in a dedicated auth-owned table rather than `user_sessions`
+- verification delivery stays behind a dedicated port and uses a configured frontend base URL
+- verification token lifetime is `24 hours`
+- emails are canonicalized by trimming and lowercasing the full address before register/login lookup
+- login rejects unverified accounts with `403 account_pending_verification`
+- logout is idempotent and always returns `204 No Content`
+- session model is database-backed opaque tokens with only the token hash stored server-side
+- session lifetime uses `30 minutes` idle timeout plus `24 hours` absolute lifetime
+- `last_seen_at` updates are throttled to at most once every `10 minutes`
+- register/login/verify carry dedicated auth rate limits from the start
+
+Planning consequence:
+
+- this is not just a route-handler detail
+- Slice 1 now includes a small schema/spec expansion:
+  - user lifecycle must support a pending verification state
+  - verification token storage must exist in a dedicated auth table
+  - the auth API contract must define the verification completion route and post-verification session issuance behavior
 
 ### Slice 2: Read-Only Core Loop Endpoints
+
+Status: **implemented**
 
 Implement next:
 
@@ -131,10 +161,14 @@ Why second:
 Scope notes:
 
 - use the response shapes from `API_SPEC.md`
-- keep pagination format aligned with the spec
+- keep cursor pagination and `page_info` envelope aligned with the spec
 - ensure jobs stay separate from the main feed contract
+- use persisted counters and scores from the `posts` table rather than recomputing them in read paths by default
+- avoid N+1 query patterns through explicit query shaping and bounded eager loading
 
 ### Slice 3: Post and Comment Creation
+
+Status: **implemented**
 
 Implement after reads are stable:
 
@@ -157,10 +191,14 @@ Why third:
 
 ### Slice 4: Voting
 
-Implement last in the initial Phase 3 set:
+Status: **implemented**
+
+Implemented last in the initial Phase 3 set:
 
 - `POST /posts/{post_id}/vote`
+- `DELETE /posts/{post_id}/vote`
 - `POST /comments/{comment_id}/vote`
+- `DELETE /comments/{comment_id}/vote`
 
 Required concerns:
 
@@ -168,7 +206,8 @@ Required concerns:
 - one-vote-per-user-per-target enforcement
 - vote replacement/removal semantics per API contract
 - aggregate count updates
-- ranking-trigger hooks where appropriate
+- synchronous aggregate/score updates for Phase 3 correctness
+- ranking-trigger hooks where appropriate, without depending on Phase 6 worker infrastructure
 
 Why fourth:
 
@@ -181,11 +220,10 @@ Why fourth:
 
 For each slice:
 
-1. review the relevant spec section and current code layout
-2. identify open decisions and service boundaries
-3. agree on the contract and shape
-4. implement routes, schemas, services, and tests together
-5. update docs/checklists if the implementation clarifies or changes a prior assumption
+1. implement routes, request/response schemas, service functions, and tests together
+2. keep route handlers thin and push business rules into domain services
+3. update docs/checklists if the implementation clarifies or changes a prior assumption
+4. do not move to the next slice on broken tests in a previously working critical path
 
 No slice should be treated as complete without tests for both happy-path and permission/security failure-path behavior.
 
@@ -196,6 +234,9 @@ No slice should be treated as complete without tests for both happy-path and per
 Minimum Phase 3 checkpoints from `DEVELOPMENT_TEST_CHECKPOINTS.md`:
 
 - auth endpoint integration tests
+- verification endpoint integration tests
+- resend-verification endpoint integration tests
+- verification delivery adapter tests
 - session-cookie tests
 - CSRF integration tests
 - origin-validation tests
@@ -210,6 +251,7 @@ Security-critical regressions to catch:
 - missing `HttpOnly` / `Secure` / `SameSite` cookie settings
 - mutating requests succeeding without CSRF
 - unauthorized users reaching protected routes
+- pending accounts receiving authenticated privileges before verification
 
 Phase 3 exit criteria:
 
@@ -219,16 +261,13 @@ Phase 3 exit criteria:
 
 ---
 
-## Immediate Next Review Target
+## Current Execution State
 
-Start with **Slice 1: Auth and Session Foundation**.
+- Slice 1 is implemented and test-covered.
+- Slice 2 is implemented and test-covered.
+- Slice 3 is implemented and test-covered.
+- Slice 4 is implemented and test-covered.
+- Slice 1 is still pending live production email cutover, but that does not block Slice 2 implementation.
+- Phase 3 core API scope is now implemented end to end.
 
-Before implementation, review:
-
-- auth endpoint request/response shapes in `API_SPEC.md`
-- session cookie contract
-- CSRF/origin expectations
-- identity-domain ownership from `SERVICE_BOUNDARIES.md`
-- the unresolved email canonicalization decision captured during Phase 2 review
-
-This review should produce the concrete implementation plan for the auth slice before any Phase 3 code is written.
+This file should now be treated as the locked Phase 3 implementation plan unless a later doc review explicitly changes it.

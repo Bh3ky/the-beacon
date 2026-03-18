@@ -76,6 +76,7 @@ Exit criteria:
 Run:
 
 - auth endpoint integration tests
+- verification endpoint integration tests
 - session-cookie tests
 - CSRF integration tests
 - origin-validation tests
@@ -90,6 +91,7 @@ Security-critical regressions to catch:
 - missing `HttpOnly` / `Secure` / `SameSite` cookie settings
 - mutating requests succeeding without CSRF
 - unauthorized users reaching protected routes
+- pending accounts being able to log in or receive authenticated privileges before verification
 
 Exit criteria:
 
@@ -235,6 +237,7 @@ Must verify:
 
 - auth/session security still holds in deployed environments
 - CORS and cross-origin cookie behavior work in staging
+- verification email delivery works in staging with a verified sending domain and live provider credentials
 - moderation logging works in staging
 - ingestion sanitization works in staging
 - monitoring and alerts are live

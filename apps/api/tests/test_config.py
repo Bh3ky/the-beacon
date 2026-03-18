@@ -114,6 +114,21 @@ def test_settings_apply_default_non_database_values(monkeypatch) -> None:
     assert settings.log_level == "INFO"
     assert settings.api_host == "127.0.0.1"
     assert settings.api_port == 8000
+    assert settings.app_secret == "dev-insecure-secret"
+    assert settings.session_cookie_name == "rifthub_session"
+    assert settings.csrf_cookie_name == "rifthub_csrf"
+    assert settings.session_idle_minutes == 30
+    assert settings.session_absolute_hours == 24
+    assert settings.session_touch_interval_minutes == 10
+    assert settings.verification_token_ttl_hours == 24
+    assert settings.verification_delivery_mode == "log"
+    assert settings.frontend_base_url == "http://localhost:3000"
+    assert settings.verification_from_email == "noreply@localhost"
+    assert settings.verification_smtp_host == "127.0.0.1"
+    assert settings.verification_smtp_port == 1025
+    assert settings.verification_smtp_starttls is False
+    assert settings.resend_api_key == ""
+    assert settings.allowed_origins == ("http://localhost:3000", "http://127.0.0.1:3000")
 
 
 def test_settings_load_repo_root_dotenv(monkeypatch, tmp_path) -> None:
