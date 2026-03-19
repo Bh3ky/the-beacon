@@ -103,6 +103,21 @@ class FeedResponse(BaseModel):
     page_info: PageInfoPayload
 
 
+class PlatformSummaryPayload(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    builders_this_month: int
+    builders_delta_pct: float | None
+    funding_stories_last_30d: int
+    funding_stories_delta_pct: float | None
+    posts_per_hour: float
+    posts_per_hour_delta_pct: float | None
+    comments_this_week: int
+    comments_delta_pct: float | None
+    jobs_live: int
+    jobs_live_delta_pct: float | None
+
+
 class PostResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

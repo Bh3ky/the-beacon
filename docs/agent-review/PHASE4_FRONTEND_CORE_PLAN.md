@@ -1,7 +1,60 @@
 # Phase 4 Frontend Core Plan
 
 Date: `2026-03-18`
-Status: `slice 1 in progress`
+Status: `phase 4 core frontend implemented`
+
+## Slice 1 Notes
+
+- The homepage feed now consumes the real Phase 3 backend instead of hardcoded mock rows.
+- The homepage summary strip is also backend-fed.
+- Current summary metrics are limited to values the schema can support honestly:
+  - `builders_this_month`
+  - `funding_stories_covered`
+  - `posts_per_hour`
+  - `comments_this_week`
+  - `jobs_live`
+- Geography-flavored stats like `countries` or `top city` are deferred until the product actually stores geography.
+
+## Slice 2 Notes
+
+- Public read routes are now implemented in the frontend:
+  - `/`
+  - `/new`
+  - `/ask`
+  - `/show`
+  - `/jobs`
+  - `/post/[id]/[slug]`
+- The homepage, newest feed, jobs feed, and post detail pages all consume the live Phase 3 API.
+- `ask` and `show` now have matching backend feed endpoints and frontend pages.
+- Feed pagination uses the backend cursor through query params.
+- The post detail page renders a nested comment tree from the backend's flat comment list.
+- The comment composer shown on the detail page is currently a visual/auth CTA shell, not the final authenticated write flow.
+
+## Slice 3 Notes
+
+- Auth browser infrastructure is now in place:
+  - same-origin frontend proxy at `/api/[...path]`
+  - browser helper for cookie + CSRF-aware auth/mutation requests
+- Auth routes are now implemented in the frontend:
+  - `/login`
+  - `/register`
+  - `/verify`
+- The UI now matches the verification-first backend contract:
+  - register creates a pending account
+  - verify activates the account and starts the browser session
+  - login reflects pending-verification errors and exposes resend support
+- The auth shell uses the locked two-panel editorial layout instead of a generic form page.
+
+## Slice 4 Notes
+
+- `/submit` is now implemented and talks to the real backend through the same-origin proxy.
+- The submit surface handles authenticated and unauthenticated browser states.
+- Comment submission is now live on the post page.
+- Reply flows are now implemented inline within the comment tree.
+- Post vote controls are now live on both feed rows and post detail.
+- Comment vote controls are now live inside the comment tree.
+- The header is now auth-aware and exposes visible login/logout state.
+- Browser-side writes now use a shared client helper plus the same-origin proxy so cookies and CSRF do not leak into ad hoc component logic.
 
 ## Goal
 

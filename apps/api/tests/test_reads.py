@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import AsyncIterator
+from dataclasses import replace
 from datetime import UTC, datetime
 from types import SimpleNamespace
 from uuid import uuid4
@@ -80,6 +81,10 @@ def make_post_read(*, viewer_vote: int | None = None, job_expires_at: datetime |
         last_commented_at=now,
         job_expires_at=job_expires_at,
     )
+
+
+def make_category_post_read(category: str) -> PostRead:
+    return replace(make_post_read(), category=category)
 
 
 def make_comment_read(*, parent_comment_id=None, depth: int = 0, viewer_vote: int | None = None) -> CommentRead:
@@ -191,6 +196,40 @@ def test_jobs_feed_returns_expected_payload(monkeypatch) -> None:
 
     assert response.status_code == 200
     assert response.json()["items"][0]["post_type"] == "job"
+
+
+def test_ask_feed_returns_expected_payload(monkeypatch) -> None:
+    async def fake_get_ask_feed(**kwargs) -> FeedPage:
+        assert kwargs["limit"] == 30
+        return FeedPage(
+            items=[make_category_post_read("ask")],
+            page_info=PageInfo(next_cursor=None, has_next_page=False),
+        )
+
+    monkeypatch.setattr(feeds_module, "get_ask_feed", fake_get_ask_feed)
+
+    with build_client(monkeypatch) as client:
+        response = client.get("/v1/feeds/ask")
+
+    assert response.status_code == 200
+    assert response.json()["items"][0]["category"] == "ask"
+
+
+def test_show_feed_returns_expected_payload(monkeypatch) -> None:
+    async def fake_get_show_feed(**kwargs) -> FeedPage:
+        assert kwargs["limit"] == 30
+        return FeedPage(
+            items=[make_category_post_read("show")],
+            page_info=PageInfo(next_cursor=None, has_next_page=False),
+        )
+
+    monkeypatch.setattr(feeds_module, "get_show_feed", fake_get_show_feed)
+
+    with build_client(monkeypatch) as client:
+        response = client.get("/v1/feeds/show")
+
+    assert response.status_code == 200
+    assert response.json()["items"][0]["category"] == "show"
 
 
 def test_post_detail_returns_expected_payload(monkeypatch) -> None:

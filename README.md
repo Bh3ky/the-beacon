@@ -48,6 +48,11 @@ npm run worker:dev
 
 The API exposes `GET /health` once started.
 
+API runtime note:
+
+- `npm run api:dev` now uses auto reload for local frontend/backend iteration
+- `npm run api:run` keeps the stable non-reload server for checklist/manual verification work
+
 ## Database Workflow
 
 Phase 2 adds PostgreSQL, SQLAlchemy, and Alembic.
@@ -75,6 +80,12 @@ Apply the latest database migration:
 
 ```bash
 npm run db:upgrade
+```
+
+Seed richer development homepage/feed content:
+
+```bash
+npm run db:seed:feed
 ```
 
 Roll back one migration:

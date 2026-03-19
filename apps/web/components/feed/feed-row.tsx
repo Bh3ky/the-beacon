@@ -1,12 +1,17 @@
 import Link from "next/link";
 
+import { VoteControl } from "@/components/vote/vote-control";
+
 import { CategoryBadge, type FeedCategory } from "./category-badge";
 
 export type FeedRowModel = {
-  id: number;
+  id: string;
+  slug: string;
   title: string;
+  url: string | null;
   domain: string | null;
   points: number;
+  viewerVote: 1 | -1 | null;
   author: string;
   time: string;
   comments: number;
@@ -14,38 +19,43 @@ export type FeedRowModel = {
 };
 
 export function FeedRow({ post, rank }: { post: FeedRowModel; rank: number }) {
+  const discussionHref = `/post/${post.id}/${post.slug}`;
+  const titleHref = post.url ?? discussionHref;
+
   return (
-    <article className="group grid grid-cols-[2rem_2.5rem_1fr] gap-4 border-b border-[var(--color-border)] py-5 transition-colors hover:bg-[var(--color-surface-hover)]">
+    <article className="group grid grid-cols-[2rem_1fr] gap-4 border-b border-[var(--color-border)] py-5 transition-colors hover:bg-[var(--color-surface-hover)]">
       <span className="pt-1 text-right font-mono text-[length:var(--fs-body-base)] text-[var(--color-text-dim)]">
         {rank}.
       </span>
 
-      <div className="flex flex-col items-center gap-1.5 pt-0.5">
-        <button
-          type="button"
-          aria-label={`Upvote ${post.title}`}
-          className="font-mono text-[length:var(--fs-body-base)] text-[var(--color-text-dim)] transition-colors hover:text-[var(--color-accent)]"
-        >
-          ▲
-        </button>
-        <span className="font-mono text-[length:var(--fs-body-base)] text-[var(--color-text-muted)]">
-          {post.points}
-        </span>
-      </div>
-
       <div className="min-w-0">
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-2">
+          <VoteControl
+            target="post"
+            targetId={post.id}
+            initialScore={post.points}
+            initialViewerVote={post.viewerVote}
+            orientation="horizontal"
+            compact
+          />
           <CategoryBadge category={post.category} />
-          <Link
-            href={`/post/demo-${post.id}/placeholder-slug`}
-            className="font-display text-[length:var(--fs-body-feed-title)] leading-[1.35] tracking-[-0.02em] text-[var(--color-text)] transition-colors hover:text-[var(--color-accent)]"
+          <a
+            href={titleHref}
+            target={post.url ? "_blank" : undefined}
+            rel={post.url ? "noreferrer" : undefined}
+            className="feed-row-title-link font-display text-[length:var(--fs-body-feed-title)] leading-[1.35] tracking-[-0.02em] text-[var(--color-text)] transition-colors"
           >
             {post.title}
-          </Link>
+          </a>
           {post.domain ? (
-            <span className="font-mono text-[length:var(--fs-label)] text-[var(--color-text-dim)]">
+            <a
+              href={titleHref}
+              target={post.url ? "_blank" : undefined}
+              rel={post.url ? "noreferrer" : undefined}
+              className="feed-row-domain-link font-mono text-[length:var(--fs-label)] text-[var(--color-text-dim)] transition-colors"
+            >
               ({post.domain})
-            </span>
+            </a>
           ) : null}
         </div>
 
@@ -56,14 +66,14 @@ export function FeedRow({ post, rank }: { post: FeedRowModel; rank: number }) {
           </span>
           <span>{post.time}</span>
           <Link
-            href={`/post/demo-${post.id}/placeholder-slug`}
-            className="transition-colors hover:text-[var(--color-accent)]"
+            href={discussionHref}
+            className="feed-row-comments-link text-[var(--color-text-dim)] transition-colors"
           >
             {post.comments} comments
           </Link>
           <button
             type="button"
-            className="transition-colors hover:text-[var(--color-accent)]"
+            className="feed-row-hide-button transition-colors"
           >
             hide
           </button>

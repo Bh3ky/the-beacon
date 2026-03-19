@@ -221,6 +221,16 @@ Review order status:
   - Slice 1 uses the locked dark/orange palette from the mockups, not ad hoc Tailwind defaults
   - because network-dependent Google font fetches break local/offline builds here, the current implementation uses explicit serif/mono fallback stacks instead of `next/font/google`
   - exact DM Serif Display / IBM Plex Mono delivery can be revisited later via vendored/local fonts if needed
+  - the centered app shell is now the default frontend surface: `max-w-6xl`, no rounded corners, with the RiftHub surface framed inside a darker browser canvas
+  - homepage stats now come from a real backend summary endpoint, not hardcoded frontend numbers
+  - dev feed richness comes from seeded backend data in `scripts/seed-data/dev_feed_posts.json`, not frontend literals
+  - public read surfaces are live for `/`, `/new`, `/ask`, `/show`, `/jobs`, and `/post/[id]/[slug]`
+  - frontend auth browser flow now uses a same-origin proxy at `apps/web/app/api/[...path]/route.ts` so cookies and CSRF stay on the web origin
+  - `/login`, `/register`, `/verify`, and `/submit` are now implemented against the live backend contract
+  - header auth state is now visible in the UI through a client-side session-aware control with logout
+  - comment submission and inline replies are now implemented on post detail
+  - post and comment vote controls are now implemented in the frontend against the live Phase 3 API
+  - Phase 4 core frontend scope is now implemented from the product-surface perspective
 
 ## Resolved Product Decisions
 
@@ -311,3 +321,26 @@ Review order status:
 - shared write-access restriction remains a backend/service-layer helper, not a FastAPI dependency
 - current focused Phase 3 validation baseline after hardening is `106 passed`
 - when fixing FastAPI/Starlette callback typing issues, check the official framework docs and Python typing docs first; prefer framework-compatible callback signatures plus `Protocol`-based shared helpers over ad hoc `object` typing or cast-heavy patches
+- Phase 4 frontend foundation now uses:
+  - a centered framed app shell instead of a full-bleed product surface
+  - real backend-fed homepage feed data
+  - real backend-fed homepage summary metrics
+- homepage summary metrics are intentionally limited to schema-backed values:
+  - `builders_this_month`
+  - `funding_stories_covered`
+  - `posts_per_hour`
+  - `comments_this_week`
+  - `jobs_live`
+- do not invent geography-driven frontend stats until the backend actually stores geography
+- richer homepage/feed sample content should come from the dev seed path, not frontend literals:
+  - fixture: `scripts/seed-data/dev_feed_posts.json`
+  - command: `npm run db:seed:feed`
+- homepage badge coverage now includes real backend categories beyond the initial mockup subset:
+  - `funding`, `show`, `ask`, `opinion`, `policy`, `ecosystem`, `engineering`, `launch`, `jobs`
+- Phase 4 public read frontend slice is now implemented:
+  - `/`, `/new`, `/ask`, `/show`, `/jobs`, `/post/[id]/[slug]`
+  - feed pages use real backend cursor pagination
+  - post detail builds a nested comment tree from the flat API comment payload
+- local API workflow is now split intentionally:
+  - `npm run api:dev` = hot reload for daily development
+  - `npm run api:run` = stable non-reload server for manual verification/checklist work

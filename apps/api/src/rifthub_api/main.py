@@ -25,7 +25,7 @@ from rifthub_api.errors import (
     validation_error_handler,
     voting_error_handler,
 )
-from rifthub_api.routes import auth_router, comments_router, feeds_router, posts_router
+from rifthub_api.routes import auth_router, comments_router, feeds_router, posts_router, stats_router
 from rifthub_backend.auth.service import AuthError
 from rifthub_backend.creation import CreationError
 from rifthub_backend.reads import ReadError
@@ -84,6 +84,7 @@ def create_app() -> FastAPI:
     app.include_router(comments_router, prefix="/v1")
     app.include_router(feeds_router, prefix="/v1")
     app.include_router(posts_router, prefix="/v1")
+    app.include_router(stats_router, prefix="/v1")
 
     return app
 
@@ -91,11 +92,19 @@ def create_app() -> FastAPI:
 app = create_app()
 
 
-def run() -> None:
+def _run_server(*, reload: bool) -> None:
     settings = get_settings()
     uvicorn.run(
         "rifthub_api.main:app",
         host=settings.api_host,
         port=settings.api_port,
-        reload=False,
+        reload=reload,
     )
+
+
+def run() -> None:
+    _run_server(reload=False)
+
+
+def run_dev() -> None:
+    _run_server(reload=True)

@@ -16,6 +16,7 @@ dependencies = [
 
 [project.scripts]
 rifthub-api = "rifthub_api.main:run"
+rifthub-api-dev = "rifthub_api.main:run_dev"
 
 [dependency-groups]
 dev = [

@@ -1,0 +1,165 @@
+{
+  "version": 1,
+  "description": "Development feed fixtures for a richer Phase 4 homepage without frontend hardcoded rows.",
+  "posts": [
+    {
+      "title": "Flutterwave raises $17M to expand payment infrastructure across West Africa",
+      "domain": "techcrunch.com",
+      "url": "https://techcrunch.com/africa/flutterwave-raises-17m-payment-infrastructure-west-africa",
+      "points": 312,
+      "author": "builderzw",
+      "hours_ago": 4,
+      "comments": 87,
+      "category": "funding",
+      "post_type": "link"
+    },
+    {
+      "title": "Show Rift: I built an open-source M-Pesa SDK for Node.js developers",
+      "domain": "github.com",
+      "url": "https://github.com/nairobidev/mpesa-node-sdk",
+      "points": 284,
+      "author": "nairobidev",
+      "hours_ago": 6,
+      "comments": 63,
+      "category": "show",
+      "post_type": "link"
+    },
+    {
+      "title": "Why African founders should stop building for Silicon Valley and start building for Accra",
+      "domain": "medium.com",
+      "url": "https://medium.com/@kofi-atta/building-for-accra-not-silicon-valley",
+      "points": 241,
+      "author": "kofi_atta",
+      "hours_ago": 8,
+      "comments": 6,
+      "category": "opinion",
+      "post_type": "link",
+      "threaded_comments": [
+        {
+          "author": "nairobidev",
+          "body_markdown": "This is the most important essay I've read this year. We keep benchmarking ourselves against metrics designed for a completely different context — TAM calculations based on credit card penetration rates, growth curves that assume reliable internet, unit economics that ignore agent networks and cash-based markets. The frameworks themselves are the problem.",
+          "score": 84,
+          "minutes_after_post": 60,
+          "replies": [
+            {
+              "author": "builderzw",
+              "body_markdown": "Exactly. I pitched to a London-based VC last month and spent 20 minutes explaining why our churn numbers look different when your primary distribution is through USSD. They kept asking when we'd move to a 'proper app'. That question itself reveals the blind spot.",
+              "score": 47,
+              "minutes_after_post": 90,
+              "replies": [
+                {
+                  "author": "kofi_atta",
+                  "body_markdown": "That's the author here — this is precisely the scenario I had in mind writing this. The USSD channel serves 400M people who will never be on a smartphone. That's not a stepping stone, that's the market.",
+                  "score": 31,
+                  "minutes_after_post": 120,
+                  "replies": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "author": "cairo_startup",
+          "body_markdown": "Strong agree from the MENA side. Egypt has 105M people, mobile penetration is 94%, but smartphone penetration is 45%. Half our market doesn't exist in the metrics VCs look at. We built our whole stack around feature phones and it's our biggest competitive moat.",
+          "score": 22,
+          "minutes_after_post": 150,
+          "replies": []
+        },
+        {
+          "author": "fintech_ng",
+          "body_markdown": "The irony is that African founders who build for Accra end up with better businesses. Lower burn, stronger retention, real revenue from day one. They just can't raise because the pitch doesn't fit the pattern-matching. The incentives are broken not the founders.",
+          "score": 63,
+          "minutes_after_post": 210,
+          "replies": [
+            {
+              "author": "talentwatch",
+              "body_markdown": "This is the crux of it. The fundraising market and the product market are misaligned. Solve for the product market first — the fundraising will come once the numbers are undeniable. Chipper, Wave, Moniepoint all did this.",
+              "score": 18,
+              "minutes_after_post": 240,
+              "replies": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Nigeria's SEC releases updated framework for crypto regulation in 2025",
+      "domain": "sec.gov.ng",
+      "url": "https://sec.gov.ng/2025/crypto-framework-update",
+      "points": 198,
+      "author": "fintech_ng",
+      "hours_ago": 10,
+      "comments": 45,
+      "category": "policy",
+      "post_type": "link"
+    },
+    {
+      "title": "Ask Rift: Best local cloud hosting options for early-stage African startups?",
+      "domain": null,
+      "url": null,
+      "points": 176,
+      "author": "bheki_dev",
+      "hours_ago": 11,
+      "comments": 94,
+      "category": "ask",
+      "post_type": "text",
+      "body_markdown": "I want providers with good uptime, local billing options, and support for small teams shipping in East and West Africa."
+    },
+    {
+      "title": "Andela is now placing engineers across 100+ African companies — the model has shifted",
+      "domain": "andela.com",
+      "url": "https://andela.com/blog/african-engineering-market-shift",
+      "points": 154,
+      "author": "talentwatch",
+      "hours_ago": 13,
+      "comments": 38,
+      "category": "ecosystem",
+      "post_type": "link"
+    },
+    {
+      "title": "The infrastructure problem: why payments still fail at 2AM across the continent",
+      "domain": "substack.com",
+      "url": "https://infrabuilder.substack.com/p/payments-still-fail-at-2am",
+      "points": 143,
+      "author": "infrabuilder",
+      "hours_ago": 14,
+      "comments": 71,
+      "category": "engineering",
+      "post_type": "link"
+    },
+    {
+      "title": "Show Rift: Rift — a Hacker News for African tech (we're building this live)",
+      "domain": "getrift.africa",
+      "url": "https://getrift.africa/build-in-public",
+      "points": 398,
+      "author": "bheki_dev",
+      "hours_ago": 0,
+      "comments": 0,
+      "category": "show",
+      "post_type": "link"
+    },
+    {
+      "title": "Egypt's fintech Paymob crosses 250k merchants — largest POS network in MENA-Africa",
+      "domain": "paymob.com",
+      "url": "https://paymob.com/news/250k-merchants-pos-network",
+      "points": 129,
+      "author": "cairo_startup",
+      "hours_ago": 16,
+      "comments": 29,
+      "category": "funding",
+      "post_type": "link"
+    },
+    {
+      "title": "Job: Senior Backend Engineer at Chipper Cash — Remote, Africa-based preferred",
+      "domain": "chippercash.com",
+      "url": "https://chippercash.com/careers/senior-backend-engineer-africa",
+      "points": 88,
+      "author": "chipperhiring",
+      "hours_ago": 18,
+      "comments": 14,
+      "category": "jobs",
+      "post_type": "job",
+      "job_expires_in_days": 30
+    }
+  ]
+}

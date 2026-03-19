@@ -11,7 +11,7 @@ from sqlalchemy import Select, and_, desc, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
-from rifthub_backend.db.types import CommentStatus, PostStatus, PostType, UserRole
+from rifthub_backend.db.types import Category, CommentStatus, PostStatus, PostType, UserRole
 from rifthub_backend.models.comment import Comment
 from rifthub_backend.models.domain import Domain
 from rifthub_backend.models.post import Post
@@ -20,7 +20,7 @@ from rifthub_backend.models.vote import CommentVote, PostVote
 
 
 CommentSort = Literal["top", "new", "old"]
-FeedKind = Literal["top", "new", "jobs"]
+FeedKind = Literal["top", "new", "jobs", "ask", "show"]
 COMMENT_READ_LIMIT = 500
 
 
@@ -243,7 +243,7 @@ def _apply_feed_cursor(
     payload = decode_feed_cursor(cursor, kind=kind)
     try:
         cursor_id = UUID(str(payload["id"]))
-        if kind == "top":
+        if kind in {"top", "ask", "show"}:
             rank_score = float(payload["rank_score"])
             return query.where(
                 or_(
@@ -304,7 +304,7 @@ def _feed_page_info(*, kind: FeedKind, posts: list[Post], has_next_page: bool) -
         return PageInfo(next_cursor=None, has_next_page=False)
 
     last_post = posts[-1]
-    if kind == "top":
+    if kind in {"top", "ask", "show"}:
         cursor = encode_feed_cursor(
             {
                 "kind": kind,
@@ -335,6 +335,10 @@ async def _get_feed(
     query = _base_post_query()
     if kind == "top":
         query = query.order_by(desc(Post.rank_score), desc(Post.id))
+    elif kind == "ask":
+        query = query.where(Post.category == Category.ASK).order_by(desc(Post.rank_score), desc(Post.id))
+    elif kind == "show":
+        query = query.where(Post.category == Category.SHOW).order_by(desc(Post.rank_score), desc(Post.id))
     elif kind == "new":
         query = query.order_by(desc(Post.submitted_at), desc(Post.id))
     else:
@@ -418,6 +422,42 @@ async def get_jobs_feed(
     return await _get_feed(
         db=db,
         kind="jobs",
+        limit=limit,
+        cursor=cursor,
+        viewer_user_id=viewer_user_id,
+        viewer_role=viewer_role,
+    )
+
+
+async def get_ask_feed(
+    *,
+    db: AsyncSession,
+    limit: int,
+    cursor: str | None,
+    viewer_user_id: UUID | None,
+    viewer_role: UserRole | None,
+) -> FeedPage:
+    return await _get_feed(
+        db=db,
+        kind="ask",
+        limit=limit,
+        cursor=cursor,
+        viewer_user_id=viewer_user_id,
+        viewer_role=viewer_role,
+    )
+
+
+async def get_show_feed(
+    *,
+    db: AsyncSession,
+    limit: int,
+    cursor: str | None,
+    viewer_user_id: UUID | None,
+    viewer_role: UserRole | None,
+) -> FeedPage:
+    return await _get_feed(
+        db=db,
+        kind="show",
         limit=limit,
         cursor=cursor,
         viewer_user_id=viewer_user_id,

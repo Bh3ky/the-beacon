@@ -112,6 +112,20 @@ textarea {
   font-family: var(--font-mono), monospace;
 }
 
+.feed-row-title-link:hover,
+.feed-row-title-link:focus-visible {
+  color: var(--color-accent) !important;
+}
+
+.feed-row-domain-link:hover,
+.feed-row-domain-link:focus-visible,
+.feed-row-comments-link:hover,
+.feed-row-comments-link:focus-visible,
+.feed-row-hide-button:hover,
+.feed-row-hide-button:focus-visible {
+  color: var(--color-accent) !important;
+}
+
 ::selection {
   background: color-mix(in srgb, var(--color-accent) 65%, transparent);
   color: var(--color-nav-text-on-accent);
