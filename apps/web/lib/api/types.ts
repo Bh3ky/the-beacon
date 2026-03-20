@@ -117,6 +117,23 @@ export type CommentVoteResponse = {
   comment: CommentVotePayload;
 };
 
+export type FlagPayload = {
+  id: string;
+  target_type: "post" | "comment" | "user";
+  target_id: string;
+  reporter_id: string;
+  reason_code: "spam" | "abuse" | "misinformation" | "off_topic" | "other";
+  notes: string | null;
+  status: "open" | "reviewing" | "resolved" | "dismissed";
+  reviewed_by_user_id: string | null;
+  reviewed_at: string | null;
+  created_at: string;
+};
+
+export type FlagResponse = {
+  flag: FlagPayload;
+};
+
 export type PlatformSummary = {
   builders_this_month: number;
   builders_delta_pct: number | null;

@@ -35,12 +35,9 @@ export default async function PostPage({
         <PostHeader post={post} />
 
         <main className="flex-1 px-6 pb-20 pt-10 sm:px-10">
-          <div className="mx-auto max-w-[86rem]">
+          <div className="mx-auto max-w-344">
             <PostHero post={post} />
-            <section className="border-b border-[var(--color-border)] py-10">
-              <p className="font-mono text-[length:var(--fs-label)] uppercase tracking-[0.32em] text-[var(--color-text-dim)]">
-                Add to the conversation
-              </p>
+            <section className="border-b border-(--color-border) py-10">
               <div className="mt-6">
                 <CommentComposer postId={post.id} buttonLabel="add comment" />
               </div>
@@ -48,18 +45,18 @@ export default async function PostPage({
 
             <section className="pt-10">
               <div className="mb-8 flex flex-wrap items-center gap-6">
-                <h2 className="font-mono text-[length:var(--fs-label)] uppercase tracking-[0.32em] text-[var(--color-text-dim)]">
+                <h2 className="font-mono text-(length:--fs-label) uppercase tracking-[0.32em] text-(--color-text-dim)">
                   {post.comment_count} comments
                 </h2>
-                <div className="flex items-center gap-5 font-mono text-[length:var(--fs-meta)] text-[var(--color-text-dim)]">
+                <div className="flex items-center gap-5 font-mono text-(length:--fs-meta) text-(--color-text-dim)">
                   {(["top", "new", "old"] as const).map((option) => (
                     <a
                       key={option}
                       href={`?sort=${option}`}
                       className={
                         option === sort
-                          ? "text-[var(--color-accent)]"
-                          : "transition-colors hover:text-[var(--color-accent)]"
+                          ? "text-(--color-accent)"
+                          : "transition-colors hover:text-(--color-accent)"
                       }
                     >
                       {option}

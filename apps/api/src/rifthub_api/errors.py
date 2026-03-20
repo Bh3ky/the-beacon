@@ -7,6 +7,7 @@ from typing import Protocol
 
 from rifthub_backend.auth.service import AuthError
 from rifthub_backend.creation import CreationError
+from rifthub_backend.flags import FlaggingError
 from rifthub_backend.reads import ReadError
 from rifthub_backend.voting import VotingError
 
@@ -79,6 +80,11 @@ async def read_error_handler(_: Request, exc: Exception) -> JSONResponse:
 
 async def creation_error_handler(_: Request, exc: Exception) -> JSONResponse:
     assert isinstance(exc, CreationError)
+    return _custom_error_response(exc)
+
+
+async def flagging_error_handler(_: Request, exc: Exception) -> JSONResponse:
+    assert isinstance(exc, FlaggingError)
     return _custom_error_response(exc)
 
 

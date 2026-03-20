@@ -30,7 +30,7 @@ export async function AuthShell({
 }: {
   activeTab: "login" | "register";
   heading: string;
-  subheading: string;
+  subheading?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -66,20 +66,20 @@ export async function AuthShell({
                 </Link>
               </div>
 
-              <div className="mx-auto mt-16 max-w-3xl text-center">
+              <div className="mx-auto mt-30 max-w-3xl text-center">
                 <h1 className="font-display text-(length:--fs-heading-hero) leading-[1.18] tracking-[-0.05em] text-(--color-text)">
                   Cut through the noise. <br />
-                  See what is happening in{" "}
-                  <span className="italic text-(--color-accent)">Africa&apos;s tech ecosystem</span>.
+                  Get closer to the{" "}
+                  <span className="italic text-(--color-accent)">signal</span>.
                 </h1>
                 <p className="mx-auto mt-8 max-w-2xl whitespace-pre-line font-mono text-(length:--fs-body-comment) leading-[1.85] text-(--color-text-muted)">
                   One feed. Zero algorithm.
                   {"\n"}
-                  Real-time insights from the builders and founders shaping the continent.
+                  Real-time insights from the builders and founders shaping Africa's ecosystem.
                 </p>
               </div>
 
-              <div className="mx-auto mt-16 w-full max-w-xl border border-(--color-border-strong) bg-[rgba(13,11,8,0.58)] px-6 py-8 shadow-[0_24px_80px_rgba(0,0,0,0.28)] backdrop-blur-[2px] sm:px-8 sm:py-10">
+              <div className="mx-auto mt-16 w-full max-w-lg border border-(--color-border-strong) bg-[rgba(13,11,8,0.58)] px-6 py-8 shadow-[0_24px_80px_rgba(0,0,0,0.28)] backdrop-blur-[2px] sm:px-8 sm:py-10">
                 <div className="flex border-b border-(--color-border)">
                   <Link
                     href="/login"
@@ -105,13 +105,15 @@ export async function AuthShell({
                   </Link>
                 </div>
 
-                <div className="pt-12">
+                <div className="pt-8">
                   <h2 className="text-center font-display text-(length:--fs-heading-form) tracking-[-0.04em] text-(--color-text)">
                     {heading}
                   </h2>
-                  <p className="mx-auto mt-4 max-w-lg text-center font-mono text-(length:--fs-body-base) leading-7 text-(--color-text-dim)">
-                    {subheading}
-                  </p>
+                  {subheading ? (
+                    <p className="mx-auto mt-4 max-w-lg text-center font-mono text-(length:--fs-body-base) leading-7 text-(--color-text-dim)">
+                      {subheading}
+                    </p>
+                  ) : null}
                   <div className="mt-12">{children}</div>
                 </div>
               </div>

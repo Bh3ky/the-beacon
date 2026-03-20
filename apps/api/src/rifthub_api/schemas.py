@@ -6,7 +6,16 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
-from rifthub_backend.db.types import CommentStatus, PostStatus, PostType, UserRole, UserStatus
+from rifthub_backend.db.types import (
+    CommentStatus,
+    FlagReason,
+    FlagStatus,
+    FlagTargetType,
+    PostStatus,
+    PostType,
+    UserRole,
+    UserStatus,
+)
 
 
 class UserPayload(BaseModel):
@@ -118,6 +127,21 @@ class PlatformSummaryPayload(BaseModel):
     jobs_live_delta_pct: float | None
 
 
+class FlagPayload(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    target_type: FlagTargetType
+    target_id: UUID
+    reporter_id: UUID
+    reason_code: FlagReason
+    notes: str | None
+    status: FlagStatus
+    reviewed_by_user_id: UUID | None
+    reviewed_at: datetime | None
+    created_at: datetime
+
+
 class PostResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -169,3 +193,9 @@ class CommentVoteResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     comment: CommentVotePayload
+
+
+class FlagResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    flag: FlagPayload

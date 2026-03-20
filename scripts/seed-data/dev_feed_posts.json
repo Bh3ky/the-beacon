@@ -9,7 +9,7 @@
       "points": 312,
       "author": "builderzw",
       "hours_ago": 4,
-      "comments": 87,
+      "comments": 12,
       "category": "funding",
       "post_type": "link"
     },
@@ -20,7 +20,7 @@
       "points": 284,
       "author": "nairobidev",
       "hours_ago": 6,
-      "comments": 63,
+      "comments": 11,
       "category": "show",
       "post_type": "link"
     },
@@ -31,7 +31,7 @@
       "points": 241,
       "author": "kofi_atta",
       "hours_ago": 8,
-      "comments": 6,
+      "comments": 10,
       "category": "opinion",
       "post_type": "link",
       "threaded_comments": [
@@ -79,6 +79,36 @@
               "replies": []
             }
           ]
+        },
+        {
+          "author": "infrabuilder",
+          "body_markdown": "What this essay nails is distribution. So many decks assume everyone discovers products the same way users in San Francisco do. But if your customer acquisition loop runs through agents, WhatsApp groups, and offline trust networks, the whole company architecture looks different.",
+          "score": 29,
+          "minutes_after_post": 275,
+          "replies": [
+            {
+              "author": "bheki_dev",
+              "body_markdown": "And that changes what a great team looks like too. You need operators who understand field rollouts and compliance, not just paid acquisition and app-store funnel optimization.",
+              "score": 16,
+              "minutes_after_post": 305,
+              "replies": []
+            }
+          ]
+        },
+        {
+          "author": "talentwatch",
+          "body_markdown": "The talent angle matters here too. The best founders I meet are obsessed with reducing friction for customers in their actual market, not copying prestige product patterns from elsewhere.",
+          "score": 14,
+          "minutes_after_post": 330,
+          "replies": [
+            {
+              "author": "builderzw",
+              "body_markdown": "Yes. It is easier to recruit around a clear local thesis too. Great people want to solve a real problem, not cosplay a Bay Area roadmap from Nairobi or Accra.",
+              "score": 11,
+              "minutes_after_post": 350,
+              "replies": []
+            }
+          ]
         }
       ]
     },
@@ -89,7 +119,7 @@
       "points": 198,
       "author": "fintech_ng",
       "hours_ago": 10,
-      "comments": 45,
+      "comments": 10,
       "category": "policy",
       "post_type": "link"
     },
@@ -100,7 +130,7 @@
       "points": 176,
       "author": "bheki_dev",
       "hours_ago": 11,
-      "comments": 94,
+      "comments": 15,
       "category": "ask",
       "post_type": "text",
       "body_markdown": "I want providers with good uptime, local billing options, and support for small teams shipping in East and West Africa."
@@ -112,7 +142,7 @@
       "points": 154,
       "author": "talentwatch",
       "hours_ago": 13,
-      "comments": 38,
+      "comments": 10,
       "category": "ecosystem",
       "post_type": "link"
     },
@@ -123,7 +153,7 @@
       "points": 143,
       "author": "infrabuilder",
       "hours_ago": 14,
-      "comments": 71,
+      "comments": 11,
       "category": "engineering",
       "post_type": "link"
     },
@@ -134,7 +164,7 @@
       "points": 398,
       "author": "bheki_dev",
       "hours_ago": 0,
-      "comments": 0,
+      "comments": 10,
       "category": "show",
       "post_type": "link"
     },
@@ -145,7 +175,7 @@
       "points": 129,
       "author": "cairo_startup",
       "hours_ago": 16,
-      "comments": 29,
+      "comments": 10,
       "category": "funding",
       "post_type": "link"
     },
@@ -156,7 +186,7 @@
       "points": 88,
       "author": "chipperhiring",
       "hours_ago": 18,
-      "comments": 14,
+      "comments": 10,
       "category": "jobs",
       "post_type": "job",
       "job_expires_in_days": 30

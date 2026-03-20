@@ -21,13 +21,15 @@ from rifthub_api.errors import (
     auth_error_handler,
     creation_error_handler,
     error_response,
+    flagging_error_handler,
     read_error_handler,
     validation_error_handler,
     voting_error_handler,
 )
-from rifthub_api.routes import auth_router, comments_router, feeds_router, posts_router, stats_router
+from rifthub_api.routes import auth_router, comments_router, feeds_router, flags_router, posts_router, stats_router
 from rifthub_backend.auth.service import AuthError
 from rifthub_backend.creation import CreationError
+from rifthub_backend.flags import FlaggingError
 from rifthub_backend.reads import ReadError
 from rifthub_backend.voting import VotingError
 
@@ -53,6 +55,7 @@ def create_app() -> FastAPI:
     app.add_exception_handler(ApiError, api_error_handler)
     app.add_exception_handler(AuthError, auth_error_handler)
     app.add_exception_handler(CreationError, creation_error_handler)
+    app.add_exception_handler(FlaggingError, flagging_error_handler)
     app.add_exception_handler(ReadError, read_error_handler)
     app.add_exception_handler(VotingError, voting_error_handler)
     app.add_exception_handler(RequestValidationError, validation_error_handler)
@@ -83,6 +86,7 @@ def create_app() -> FastAPI:
     app.include_router(auth_router, prefix="/v1")
     app.include_router(comments_router, prefix="/v1")
     app.include_router(feeds_router, prefix="/v1")
+    app.include_router(flags_router, prefix="/v1")
     app.include_router(posts_router, prefix="/v1")
     app.include_router(stats_router, prefix="/v1")
 

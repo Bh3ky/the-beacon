@@ -344,3 +344,7 @@ Review order status:
 - local API workflow is now split intentionally:
   - `npm run api:dev` = hot reload for daily development
   - `npm run api:run` = stable non-reload server for manual verification/checklist work
+- flagging is now partially live:
+  - backend `POST /v1/flags` is implemented for authenticated reporting
+  - comment-thread `flag` opens an inline report flow in the web app
+  - feed/comment `hide` remains intentionally unwired pending a later moderation slice

@@ -6,7 +6,6 @@ export default function RegisterPage() {
     <AuthShell
       activeTab="register"
       heading="Join RiftHub"
-      subheading="Create an account and join the conversation shaping African tech."
     >
       <RegisterForm />
     </AuthShell>

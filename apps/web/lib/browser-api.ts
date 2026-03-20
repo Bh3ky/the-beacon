@@ -4,6 +4,7 @@ import type {
   AuthenticatedResponse,
   CommentResponse,
   CommentVoteResponse,
+  FlagResponse,
   PostResponse,
   PostVoteResponse,
   RegisterResponse,
@@ -202,5 +203,22 @@ export async function voteOnComment(
 export async function removeCommentVote(commentId: string): Promise<CommentVoteResponse> {
   return browserApiFetch<CommentVoteResponse>(`comments/${commentId}/vote`, {
     method: "DELETE",
+  });
+}
+
+export async function createFlag(payload: {
+  target_type: "post" | "comment" | "user";
+  target_id: string;
+  reason_code: "spam" | "abuse" | "misinformation" | "off_topic" | "other";
+  notes?: string | null;
+}): Promise<FlagResponse> {
+  return browserApiFetch<FlagResponse>("flags", {
+    method: "POST",
+    body: JSON.stringify({
+      target_type: payload.target_type,
+      target_id: payload.target_id,
+      reason_code: payload.reason_code,
+      notes: payload.notes ?? null,
+    }),
   });
 }

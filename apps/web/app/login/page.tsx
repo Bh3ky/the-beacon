@@ -12,7 +12,6 @@ export default async function LoginPage({
     <AuthShell
       activeTab="login"
       heading="Welcome back"
-      subheading="Sign in to vote, comment, submit posts, and keep your place in the feed."
     >
       <LoginForm
         nextHref={resolvedSearchParams?.next}
