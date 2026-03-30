@@ -98,6 +98,12 @@ class Settings:
     verification_smtp_starttls: bool = False
     resend_api_key: str = ""
     allowed_origins: tuple[str, ...] = ("http://localhost:3000", "http://127.0.0.1:3000")
+    rate_limit_backend: str = "memory"
+    redis_url: str = ""
+    rate_limit_prefix: str = "rifthub:rate-limit"
+    trusted_proxy_ips: tuple[str, ...] = ("127.0.0.1", "::1")
+    ingestion_system_username: str = "rifthub_bot"
+    ingestion_system_email: str = "ingestion-bot@localhost"
 
 
 def get_settings() -> Settings:
@@ -105,6 +111,16 @@ def get_settings() -> Settings:
     database_url = _required_env("RIFTHUB_DATABASE_URL")
     environment = os.getenv("RIFTHUB_ENV", "development")
     default_delivery_mode = "noop" if environment == "test" else "log"
+    default_rate_limit_backend = "memory" if environment in {"development", "test"} else "redis"
+    redis_url = os.getenv("RIFTHUB_REDIS_URL", "").strip()
+    rate_limit_backend = os.getenv(
+        "RIFTHUB_RATE_LIMIT_BACKEND",
+        default_rate_limit_backend,
+    ).strip().lower()
+    default_trusted_proxy_ips = ("127.0.0.1", "::1") if environment in {"development", "test"} else ()
+
+    if rate_limit_backend == "redis" and not redis_url:
+        raise ConfigError("Missing required environment variable: RIFTHUB_REDIS_URL")
 
     return Settings(
         environment=environment,
@@ -138,4 +154,16 @@ def get_settings() -> Settings:
             "RIFTHUB_ALLOWED_ORIGINS",
             ("http://localhost:3000", "http://127.0.0.1:3000"),
         ),
+        rate_limit_backend=rate_limit_backend,
+        redis_url=redis_url,
+        rate_limit_prefix=os.getenv("RIFTHUB_RATE_LIMIT_PREFIX", "rifthub:rate-limit").strip()
+        or "rifthub:rate-limit",
+        trusted_proxy_ips=_env_csv(
+            "RIFTHUB_TRUSTED_PROXY_IPS",
+            default_trusted_proxy_ips,
+        ),
+        ingestion_system_username=os.getenv("RIFTHUB_INGESTION_SYSTEM_USERNAME", "rifthub_bot").strip()
+        or "rifthub_bot",
+        ingestion_system_email=os.getenv("RIFTHUB_INGESTION_SYSTEM_EMAIL", "ingestion-bot@localhost").strip()
+        or "ingestion-bot@localhost",
     )

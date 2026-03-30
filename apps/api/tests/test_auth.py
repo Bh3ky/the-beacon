@@ -101,7 +101,10 @@ def test_register_returns_pending_user_without_session_cookie(monkeypatch) -> No
     pending_user = make_user(status=UserStatus.PENDING)
 
     async def fake_register_user(**_: object) -> PendingRegistration:
-        return PendingRegistration(user=pending_user)
+        return PendingRegistration(
+            user=pending_user,
+            verification_delivery_status="sent",
+        )
 
     monkeypatch.setattr(auth_module, "register_user", fake_register_user)
 
@@ -117,8 +120,34 @@ def test_register_returns_pending_user_without_session_cookie(monkeypatch) -> No
 
     assert response.status_code == 201
     assert response.json()["verification_required"] is True
+    assert response.json()["verification_delivery_status"] == "sent"
     assert response.json()["user"]["status"] == "pending"
     assert "set-cookie" not in response.headers
+
+
+def test_register_surfaces_failed_verification_delivery_status(monkeypatch) -> None:
+    pending_user = make_user(status=UserStatus.PENDING)
+
+    async def fake_register_user(**_: object) -> PendingRegistration:
+        return PendingRegistration(
+            user=pending_user,
+            verification_delivery_status="failed",
+        )
+
+    monkeypatch.setattr(auth_module, "register_user", fake_register_user)
+
+    with build_client(monkeypatch) as client:
+        response = client.post(
+            "/v1/auth/register",
+            json={
+                "username": "bheki",
+                "email": "bheki@example.com",
+                "password": "avery-strong-password",
+            },
+        )
+
+    assert response.status_code == 201
+    assert response.json()["verification_delivery_status"] == "failed"
 
 
 def test_resend_verification_returns_no_content(monkeypatch) -> None:
@@ -245,7 +274,10 @@ def test_me_returns_authenticated_user_and_refreshes_missing_csrf_cookie(monkeyp
 
 def test_mutating_route_rejects_disallowed_origin(monkeypatch) -> None:
     async def fake_register_user(**_: object) -> PendingRegistration:
-        return PendingRegistration(user=make_user(status=UserStatus.PENDING))
+        return PendingRegistration(
+            user=make_user(status=UserStatus.PENDING),
+            verification_delivery_status="sent",
+        )
 
     monkeypatch.setattr(auth_module, "register_user", fake_register_user)
 

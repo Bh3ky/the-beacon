@@ -7,7 +7,7 @@ name = "rifthub-worker"
 version = "0.1.0"
 description = "Background worker runtime for RiftHub."
 requires-python = ">=3.12"
-dependencies = ["rifthub-backend"]
+dependencies = ["redis>=5", "rifthub-backend"]
 
 [project.scripts]
 rifthub-worker = "rifthub_worker.main:main"

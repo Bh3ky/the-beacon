@@ -21,6 +21,7 @@ export function RegisterForm() {
   const [resending, setResending] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [successEmail, setSuccessEmail] = useState<string | null>(null);
+  const [deliveryFailed, setDeliveryFailed] = useState(false);
   const [resentNotice, setResentNotice] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
@@ -30,12 +31,19 @@ export function RegisterForm() {
     event.preventDefault();
     setSubmitting(true);
     setFormError(null);
+    setDeliveryFailed(false);
     setResentNotice(null);
     setFieldErrors({});
 
     try {
-      await register({ username, email, password });
+      const response = await register({ username, email, password });
       setSuccessEmail(trimmedEmail);
+      if (response.verification_delivery_status === "failed") {
+        setDeliveryFailed(true);
+        setFormError(
+          "Your account was created, but we could not send the verification email yet. Use resend in a moment.",
+        );
+      }
     } catch (error) {
       if (error instanceof BrowserApiError) {
         if (error.code === "duplicate_username") {
@@ -68,7 +76,9 @@ export function RegisterForm() {
 
     try {
       await resendVerification({ email: targetEmail });
-      setResentNotice("Verification link resent.");
+      setResentNotice(
+        "If the account is still pending verification, we will try sending another link.",
+      );
     } catch (error) {
       if (error instanceof BrowserApiError) {
         setFormError(error.message);
@@ -85,12 +95,22 @@ export function RegisterForm() {
       <div className="space-y-8">
         <div className="border border-(--color-border-strong) bg-[rgba(17,14,11,0.78)] px-6 py-6">
           <h3 className="font-display text-(length:--fs-heading-success) tracking-[-0.04em] text-(--color-text)">
-            Check your email!
+            {deliveryFailed ? "Your account is pending verification." : "Check your email!"}
           </h3>
           <p className="mt-4 font-mono text-(length:--fs-body-base) leading-7 text-(--color-text-dim)">
-            We've sent you a verification link to{" "}
-            <span className="text-(--color-text)">{successEmail}</span>
-            , please click it too verify your email adress. 
+            {deliveryFailed ? (
+              <>
+                Your account was created for{" "}
+                <span className="text-(--color-text)">{successEmail}</span>
+                , but we could not deliver the verification email yet.
+              </>
+            ) : (
+              <>
+                We've sent you a verification link to{" "}
+                <span className="text-(--color-text)">{successEmail}</span>
+                , please click it to verify your email address.
+              </>
+            )}
           </p>
         </div>
 
@@ -144,7 +164,7 @@ export function RegisterForm() {
           value={password}
           onChange={setPassword}
           placeholder="••••••••"
-          hint="8+ characters recommended"
+          hint="12+ characters required"
         />
 
         {formError ? (

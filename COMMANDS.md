@@ -33,6 +33,13 @@ cp .env.example .env
 Then edit `.env` for your local machine.
 The Python services load variables from the repo-root `.env`, not `.env.example`.
 
+Rate-limiting env note:
+
+- local development can keep `RIFTHUB_RATE_LIMIT_BACKEND=memory`
+- non-development environments should use `RIFTHUB_RATE_LIMIT_BACKEND=redis` with `RIFTHUB_REDIS_URL` set
+- if the API is behind a trusted reverse proxy, set `RIFTHUB_TRUSTED_PROXY_IPS` so forwarded client IPs are trusted deliberately
+- for local worker/feed-snapshot review, set `RIFTHUB_REDIS_URL=redis://127.0.0.1:6379/0`
+
 ## Run The Apps
 
 Start the Next.js web app from the repository root:
@@ -53,13 +60,13 @@ Start the worker from the repository root:
 npm run worker:dev
 ```
 
-Start local Postgres with Docker Compose:
+Start local Postgres and Redis with Docker Compose:
 
 ```bash
 npm run db:up
 ```
 
-Stream Postgres logs:
+Stream Postgres and Redis logs:
 
 ```bash
 npm run db:logs
@@ -75,6 +82,12 @@ Run the API test suite from the repository root:
 
 ```bash
 npm run api:test
+```
+
+Import the approved ingestion source fixtures from the repository root:
+
+```bash
+npm run db:seed:sources
 ```
 
 Apply the latest Alembic migration from the repository root:
@@ -156,5 +169,5 @@ uv run --package rifthub-worker rifthub-worker
 
 - Run all commands from the repository root unless the command says otherwise.
 - The root `package.json` currently exposes `web:dev`, `api:dev`, `worker:dev`, `api:test`, `db:upgrade`, and `db:downgrade`.
-- The root `package.json` currently exposes `web:dev`, `api:dev`, `worker:dev`, `api:test`, `db:up`, `db:down`, `db:logs`, `db:upgrade`, and `db:downgrade`.
+- The root `package.json` currently exposes `web:dev`, `api:dev`, `worker:dev`, `api:test`, `db:up`, `db:down`, `db:logs`, `db:seed:feed`, `db:seed:sources`, `db:upgrade`, and `db:downgrade`.
 - Linting and formatting commands are not documented here yet because they are not part of the current scaffold.

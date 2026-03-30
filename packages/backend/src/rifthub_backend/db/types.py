@@ -92,6 +92,7 @@ class ModerationTargetType(StrEnum):
     USER = "user"
     DOMAIN = "domain"
     SOURCE = "source"
+    INGESTION_ITEM = "ingestion_item"
 
 
 class ModerationActionType(StrEnum):

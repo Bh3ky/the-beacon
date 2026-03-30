@@ -70,6 +70,8 @@ class Source(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         default=30,
         server_default=text("30"),
     )
+    last_etag: Mapped[str | None] = mapped_column(String(255))
+    last_modified_header: Mapped[str | None] = mapped_column(String(255))
     last_checked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     last_success_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     last_error_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

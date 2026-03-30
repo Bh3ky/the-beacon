@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import logoImage from "../../../../public/rifthub-logo.png";
 
+import { FlagAction } from "@/components/post/flag-action";
 import { VoteControl } from "@/components/vote/vote-control";
 import type { PostPayload } from "@/lib/api/types";
 import { formatRelativeTime } from "@/lib/feed";
@@ -87,6 +88,11 @@ export function PostHero({ post }: { post: PostPayload }) {
           {post.body_markdown}
         </div>
       ) : null}
+
+      <div className="mt-8 flex items-center gap-8 border-t border-[var(--color-border)] pt-5 font-mono text-[length:var(--fs-meta)] text-[var(--color-text-dim)]">
+        <span>share</span>
+        <FlagAction targetType="post" targetId={post.id} subjectLabel="post" />
+      </div>
     </section>
   );
 }

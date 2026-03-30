@@ -1,7 +1,11 @@
+import asyncio
+from datetime import UTC, datetime
+
 from rifthub_backend.auth.delivery import (
     LoggingVerificationDelivery,
     NoopVerificationDelivery,
     ResendVerificationDelivery,
+    VerificationDeliveryRequest,
     build_verification_url,
     get_verification_delivery,
 )
@@ -77,3 +81,20 @@ def test_get_verification_delivery_rejects_log_mode_outside_dev_and_test() -> No
         assert "only allowed in development or test" in str(exc)
     else:  # pragma: no cover - defensive failure branch
         raise AssertionError("Expected log delivery mode to be rejected outside development/test.")
+
+
+def test_noop_delivery_returns_empty_result() -> None:
+    delivery = NoopVerificationDelivery()
+
+    delivery_result = asyncio.run(
+        delivery.send_verification(
+            VerificationDeliveryRequest(
+                recipient_email="bheki@example.com",
+                username="bheki",
+                verification_url="http://localhost:3000/verify?token=abc",
+                expires_at=datetime.now(UTC),
+            )
+        )
+    )
+
+    assert delivery_result.provider_message_id is None

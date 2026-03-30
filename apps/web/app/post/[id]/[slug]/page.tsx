@@ -28,6 +28,7 @@ export default async function PostPage({
     const post = postResponse.post;
     const comments = buildCommentTree(commentsResponse.items, {
       postAuthorUsername: post.author.username,
+      sort,
     });
 
     return (

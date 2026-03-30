@@ -1,6 +1,6 @@
-import { apiFetch } from "./client";
+import { apiServerFetch } from "./server";
 import type { PlatformSummary } from "./types";
 
 export async function getPlatformSummary(): Promise<PlatformSummary> {
-  return apiFetch<PlatformSummary>("/v1/stats/summary");
+  return apiServerFetch<PlatformSummary>("/v1/stats/summary");
 }

@@ -77,12 +77,19 @@ def test_partial_indexes_are_present() -> None:
         for index in ingestion_items.indexes
         if index.name == "uq_ingestion_items_source_id_external_id"
     )
+    ingestion_url_fallback_index = next(
+        index
+        for index in ingestion_items.indexes
+        if index.name == "uq_ingestion_items_source_id_url_normalized_no_external_id"
+    )
     posts_index = next(index for index in posts.indexes if index.name == "uq_posts_active_link_url_normalized")
 
     assert flags_index.unique is True
     assert flags_index.dialect_options["postgresql"]["where"] is not None
     assert ingestion_index.unique is True
     assert ingestion_index.dialect_options["postgresql"]["where"] is not None
+    assert ingestion_url_fallback_index.unique is True
+    assert ingestion_url_fallback_index.dialect_options["postgresql"]["where"] is not None
     assert posts_index.unique is True
     assert posts_index.dialect_options["postgresql"]["where"] is not None
 
@@ -100,6 +107,20 @@ def test_user_verification_token_indexes_are_present() -> None:
     assert "ix_user_verification_tokens_expires_at" in index_names
     assert active_token_index.unique is True
     assert active_token_index.dialect_options["postgresql"]["where"] is not None
+
+
+def test_user_verification_token_delivery_columns_are_present() -> None:
+    verification_tokens = Base.metadata.tables["user_verification_tokens"]
+
+    assert verification_tokens.c.delivery_status.server_default is not None
+    assert "'pending'" in str(verification_tokens.c.delivery_status.server_default.arg)
+    assert verification_tokens.c.delivery_attempt_count.server_default is not None
+    assert "0" in str(verification_tokens.c.delivery_attempt_count.server_default.arg)
+    assert "last_delivery_attempted_at" in verification_tokens.c
+    assert "delivery_sent_at" in verification_tokens.c
+    assert "delivery_failed_at" in verification_tokens.c
+    assert "delivery_provider_message_id" in verification_tokens.c
+    assert "delivery_error" in verification_tokens.c
 
 
 def test_user_counter_constraints_are_present() -> None:

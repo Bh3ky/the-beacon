@@ -129,6 +129,25 @@ def test_settings_apply_default_non_database_values(monkeypatch) -> None:
     assert settings.verification_smtp_starttls is False
     assert settings.resend_api_key == ""
     assert settings.allowed_origins == ("http://localhost:3000", "http://127.0.0.1:3000")
+    assert settings.rate_limit_backend == "memory"
+    assert settings.redis_url == ""
+    assert settings.rate_limit_prefix == "rifthub:rate-limit"
+    assert settings.trusted_proxy_ips == ("127.0.0.1", "::1")
+
+
+def test_settings_require_redis_url_when_redis_rate_limiter_is_enabled(monkeypatch) -> None:
+    monkeypatch.setattr(config_module, "_DOTENV_LOADED", True)
+    monkeypatch.setattr(config_module, "_load_dotenv", lambda: None)
+    monkeypatch.setenv(
+        "RIFTHUB_DATABASE_URL",
+        "postgresql+asyncpg://user:pass@127.0.0.1:5432/rifthub_test",
+    )
+    monkeypatch.setenv("RIFTHUB_ENV", "production")
+    monkeypatch.delenv("RIFTHUB_REDIS_URL", raising=False)
+    monkeypatch.delenv("RIFTHUB_RATE_LIMIT_BACKEND", raising=False)
+
+    with pytest.raises(ConfigError, match="RIFTHUB_REDIS_URL"):
+        get_settings()
 
 
 def test_settings_load_repo_root_dotenv(monkeypatch, tmp_path) -> None:

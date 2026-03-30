@@ -22,17 +22,20 @@ Build a working product loop early, then expand it carefully.
 
 The project is currently in:
 
-## Phase 0: Docs review
+## Phase 4: Frontend core functionally complete, Phase 5 planning in progress
 
-The goals of this phase are:
+The current practical state is:
 
-- review each document one at a time
-- resolve contradictions between docs
-- clean up Markdown structure and syntax
-- identify unclear product or implementation decisions
-- produce planning notes before coding starts
+- Phase 3 core API is implemented
+- Phase 4 core frontend is implemented and usable for the core product loop
+- recent hardening work has already landed around SSR auth correctness, auth rate limiting, and verification delivery state
+- the next focused implementation/review slice is Phase 5 ranking alignment
 
-No production code should be written until the core docs are coherent enough to guide implementation safely.
+Important note:
+
+- this does not mean the frontend is permanently finished
+- it means the core Phase 4 product surfaces exist and are usable enough to move the roadmap focus to ranking behavior
+- frontend polish, UX cleanup, and broader production hardening can continue in parallel where needed
 
 ---
 

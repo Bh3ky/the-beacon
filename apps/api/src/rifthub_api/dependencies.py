@@ -11,6 +11,7 @@ from rifthub_backend import get_async_session, get_settings
 from rifthub_backend.auth.security import verify_csrf_token
 from rifthub_backend.auth.service import CurrentSession, resolve_current_session
 from rifthub_backend.config import Settings
+from rifthub_backend.db.types import UserRole
 
 from .errors import ApiError
 
@@ -53,6 +54,32 @@ def require_authenticated_session(current_session: CurrentSessionDep) -> Current
 
 
 RequiredCurrentSession = Annotated[CurrentSession, Depends(require_authenticated_session)]
+
+
+def require_moderator_session(current_session: RequiredCurrentSession) -> CurrentSession:
+    if current_session.user.role not in {UserRole.MODERATOR, UserRole.ADMIN}:
+        raise ApiError(
+            status_code=403,
+            code="forbidden",
+            message="Moderator access is required.",
+        )
+    return current_session
+
+
+RequireModeratorSession = Annotated[CurrentSession, Depends(require_moderator_session)]
+
+
+def require_admin_session(current_session: RequiredCurrentSession) -> CurrentSession:
+    if current_session.user.role != UserRole.ADMIN:
+        raise ApiError(
+            status_code=403,
+            code="forbidden",
+            message="Administrator access is required.",
+        )
+    return current_session
+
+
+RequireAdminSession = Annotated[CurrentSession, Depends(require_admin_session)]
 
 
 def validate_session_csrf(

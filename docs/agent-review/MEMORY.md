@@ -2,8 +2,8 @@
 
 ## Current Working Rules
 
-- Current project stage: `Phase 1 - Project foundation scaffold completed`
-- Next planned stage: `Phase 2 - Database and core models`
+- Current project stage: `Phase 8 - Ingestion review-ready`
+- Next planned stage: `Phase 9 - Production readiness and final hardening`
 - Review only one source document per session
 - Do not bulk-review docs in a single session
 - Source-doc review order is fixed unless you explicitly change it
@@ -116,6 +116,12 @@ Architecture style:
 - use `docs/agent-review/PHASE0_WRAP_UP.md` as the transition summary between docs review and implementation planning
 - use `docs/agent-review/PHASE1_FOUNDATION_PLAN.md` as the source of truth for the initial scaffold pass
 - use `docs/agent-review/PHASE2_DATABASE_PLAN.md` as the source of truth for the next implementation slice
+- use `docs/agent-review/PHASE3_CORE_API_PLAN.md` as the source of truth for the core API slice
+- use `docs/agent-review/PHASE4_FRONTEND_CORE_PLAN.md` as the source of truth for the core frontend slice
+- use `docs/agent-review/PHASE7_MODERATION_PLAN.md` as the source of truth for the next moderation slice
+- use `docs/agent-review/PHASE5_RANKING_PLAN.md` as the source of truth for the next ranking slice
+- use `docs/agent-review/PHASE6_WORKER_PLAN.md` as the source of truth for the worker-system slice
+- use `docs/agent-review/PHASE8_INGESTION_PLAN.md` as the source of truth for the ingestion slice
 
 ## Fixed Review Order
 
@@ -186,7 +192,13 @@ Review order status:
   - `posts.is_ingested` and `posts.ingested_from_source_id` now have a coherence constraint, but later revisit whether the boolean should exist at all or be inferred from source linkage
   - `posts.slug` is intentionally not globally unique under the current `id + slug` routing design; revisit only if route semantics change
   - decide explicit `posts.url_normalized` duplicate policy before production, especially for link-post dedupe and repost-window behavior
-  - decide whether non-job posts must require `job_expires_at is null` and whether job posts need stricter expiry semantics
+  - job expiry policy is now:
+    - non-job posts must keep `job_expires_at = null`
+    - job posts default to a `30` day expiry window if omitted
+    - job posts may not set expiry in the past
+    - job posts may not set expiry more than `30` days in the future
+    - expired jobs stay readable on direct pages and are excluded from the jobs feed
+    - the worker may backfill or clamp legacy active job rows to the bounded expiry policy
   - review active-post partial index opportunities later for rank, category-recency, type-recency, and active job expiry queries once real query patterns are known
 - API packaging and tooling follow-up before final codebase review and production readiness:
   - keep `alembic` in `apps/api/pyproject.toml` as long as the migration environment and command surface continue to live under `apps/api`

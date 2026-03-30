@@ -22,14 +22,25 @@ from rifthub_api.errors import (
     creation_error_handler,
     error_response,
     flagging_error_handler,
+    moderation_error_handler,
     read_error_handler,
     validation_error_handler,
     voting_error_handler,
 )
-from rifthub_api.routes import auth_router, comments_router, feeds_router, flags_router, posts_router, stats_router
+from rifthub_api.rate_limit import rate_limiter
+from rifthub_api.routes import (
+    auth_router,
+    comments_router,
+    feeds_router,
+    flags_router,
+    moderation_router,
+    posts_router,
+    stats_router,
+)
 from rifthub_backend.auth.service import AuthError
 from rifthub_backend.creation import CreationError
 from rifthub_backend.flags import FlaggingError
+from rifthub_backend.moderation import ModerationError
 from rifthub_backend.reads import ReadError
 from rifthub_backend.voting import VotingError
 
@@ -44,10 +55,12 @@ def create_app() -> FastAPI:
     async def lifespan(_: FastAPI):
         try:
             engine = get_engine()
+            await rate_limiter.configure(settings)
             await ping_database(engine)
             logger.info("Starting RiftHub API in %s", settings.environment)
             yield
         finally:
+            await rate_limiter.aclose()
             await dispose_engine()
             logger.info("Stopped RiftHub API")
 
@@ -56,6 +69,7 @@ def create_app() -> FastAPI:
     app.add_exception_handler(AuthError, auth_error_handler)
     app.add_exception_handler(CreationError, creation_error_handler)
     app.add_exception_handler(FlaggingError, flagging_error_handler)
+    app.add_exception_handler(ModerationError, moderation_error_handler)
     app.add_exception_handler(ReadError, read_error_handler)
     app.add_exception_handler(VotingError, voting_error_handler)
     app.add_exception_handler(RequestValidationError, validation_error_handler)
@@ -87,6 +101,7 @@ def create_app() -> FastAPI:
     app.include_router(comments_router, prefix="/v1")
     app.include_router(feeds_router, prefix="/v1")
     app.include_router(flags_router, prefix="/v1")
+    app.include_router(moderation_router, prefix="/v1")
     app.include_router(posts_router, prefix="/v1")
     app.include_router(stats_router, prefix="/v1")
 
@@ -102,6 +117,8 @@ def _run_server(*, reload: bool) -> None:
         "rifthub_api.main:app",
         host=settings.api_host,
         port=settings.api_port,
+        proxy_headers=bool(settings.trusted_proxy_ips),
+        forwarded_allow_ips=",".join(settings.trusted_proxy_ips),
         reload=reload,
     )
 

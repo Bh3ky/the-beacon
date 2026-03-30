@@ -13,15 +13,18 @@ export type CommentNode = {
   time: string;
   isAuthor: boolean;
   replies: CommentNode[];
+  rankScore: number;
+  createdAt: string;
 };
 
 export function buildCommentTree(
   comments: CommentPayload[],
   options: {
     postAuthorUsername: string;
+    sort?: "top" | "new" | "old";
   },
 ): CommentNode[] {
-  const { postAuthorUsername } = options;
+  const { postAuthorUsername, sort = "top" } = options;
   const nodes = new Map<string, CommentNode>();
   const roots: CommentNode[] = [];
 
@@ -38,6 +41,8 @@ export function buildCommentTree(
       time: formatRelativeTime(comment.created_at),
       isAuthor: comment.author.username === postAuthorUsername,
       replies: [],
+      rankScore: comment.rank_score,
+      createdAt: comment.created_at,
     });
   }
 
@@ -58,5 +63,30 @@ export function buildCommentTree(
     roots.push(node);
   }
 
+  if (sort === "top") {
+    sortCommentNodes(roots);
+  }
+
   return roots;
+}
+
+function compareCommentNodes(left: CommentNode, right: CommentNode): number {
+  if (left.rankScore !== right.rankScore) {
+    return right.rankScore - left.rankScore;
+  }
+
+  if (left.createdAt !== right.createdAt) {
+    return right.createdAt.localeCompare(left.createdAt);
+  }
+
+  return right.id.localeCompare(left.id);
+}
+
+function sortCommentNodes(nodes: CommentNode[]): void {
+  nodes.sort(compareCommentNodes);
+  for (const node of nodes) {
+    if (node.replies.length > 0) {
+      sortCommentNodes(node.replies);
+    }
+  }
 }

@@ -52,19 +52,23 @@ API runtime note:
 
 - `npm run api:dev` now uses auto reload for local frontend/backend iteration
 - `npm run api:run` keeps the stable non-reload server for checklist/manual verification work
+- auth rate limiting defaults to in-memory for local development and test
+- non-development environments should configure Redis-backed rate limiting with `RIFTHUB_RATE_LIMIT_BACKEND=redis` and `RIFTHUB_REDIS_URL`
+- if the API sits behind a trusted proxy, set `RIFTHUB_TRUSTED_PROXY_IPS` so auth throttling keys off the real client IP instead of the proxy hop
 
 ## Database Workflow
 
 Phase 2 adds PostgreSQL, SQLAlchemy, and Alembic.
+The local Docker stack also includes Redis for the worker, feed snapshots, and lock coordination.
 Local Python runtime settings now load from the repo-root `.env`.
 
-Start local Postgres with Docker:
+Start local Postgres and Redis with Docker:
 
 ```bash
 npm run db:up
 ```
 
-Watch Postgres logs:
+Watch Postgres and Redis logs:
 
 ```bash
 npm run db:logs
@@ -98,4 +102,10 @@ Stop the Docker services when done:
 
 ```bash
 npm run db:down
+```
+
+For full local worker behavior, set this in `.env`:
+
+```bash
+RIFTHUB_REDIS_URL=redis://127.0.0.1:6379/0
 ```

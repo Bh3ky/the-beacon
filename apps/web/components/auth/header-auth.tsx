@@ -125,11 +125,23 @@ export function HeaderAuth() {
           </div>
 
           <div className="pt-5 text-center">
+            {localUser.role === "moderator" || localUser.role === "admin" ? (
+              <Link
+                href="/moderation"
+                onClick={() => setMenuOpen(false)}
+                className="block font-mono lowercase tracking-[0.06em] text-(length:--fs-body-base) text-(--color-accent) transition-colors hover:text-(--color-accent-hover)"
+              >
+                moderation
+              </Link>
+            ) : null}
             <button
               type="button"
               onClick={handleLogout}
               disabled={loggingOut}
-              className="font-mono lowercase tracking-[0.06em] text-(length:--fs-body-base) text-(--color-text-dim) transition-colors hover:text-(--color-accent) disabled:cursor-wait disabled:text-(--color-text-faint)"
+              className={[
+                "font-mono lowercase tracking-[0.06em] text-(length:--fs-body-base) text-(--color-text-dim) transition-colors hover:text-(--color-accent) disabled:cursor-wait disabled:text-(--color-text-faint)",
+                localUser.role === "moderator" || localUser.role === "admin" ? "mt-4" : "",
+              ].join(" ")}
             >
               {loggingOut ? "logging out…" : "logout"}
             </button>

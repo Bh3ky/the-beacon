@@ -11,6 +11,8 @@ from rifthub_backend.db.types import (
     FlagReason,
     FlagStatus,
     FlagTargetType,
+    ModerationActionType,
+    ModerationTargetType,
     PostStatus,
     PostType,
     UserRole,
@@ -199,3 +201,102 @@ class FlagResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     flag: FlagPayload
+
+
+class ModerationTargetSummaryPayload(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    target_type: FlagTargetType
+    title: str | None
+    excerpt: str | None
+    username: str | None
+    status: str
+
+
+class FlagQueueItemPayload(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    flag: FlagPayload
+    reporter: UserSummaryPayload
+    target: ModerationTargetSummaryPayload
+
+
+class FlagQueueResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    items: list[FlagQueueItemPayload]
+
+
+class IngestionSourceSummaryPayload(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    name: str
+    source_type: str
+    status: str
+    auto_publish: bool
+
+
+class IngestionReviewItemPayload(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    title: str
+    url: str
+    ingestion_status: str
+    detected_category: str | None
+    published_at_external: datetime | None
+    discovered_at: datetime
+    processing_notes: str | None
+    source: IngestionSourceSummaryPayload
+    linked_post_id: UUID | None
+    dedupe_match_post_id: UUID | None
+
+
+class IngestionReviewQueueResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    items: list[IngestionReviewItemPayload]
+
+
+class SourceHealthPayload(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    name: str
+    source_type: str
+    status: str
+    auto_publish: bool
+    poll_interval_minutes: int
+    last_checked_at: datetime | None
+    last_success_at: datetime | None
+    last_error_at: datetime | None
+    last_error_message: str | None
+
+
+class SourceHealthResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    items: list[SourceHealthPayload]
+
+
+class ModerationActionPayload(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    moderator_id: UUID
+    target_type: ModerationTargetType
+    target_id: UUID
+    action_type: ModerationActionType
+    reason: str | None
+    metadata_json: dict[str, object] | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class ModerationActionResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    action: ModerationActionPayload
+    flag: FlagPayload | None

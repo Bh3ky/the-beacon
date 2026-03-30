@@ -31,6 +31,13 @@ class IngestionItem(UUIDPrimaryKeyMixin, TimestampMixin, Base):
             unique=True,
             postgresql_where=text("external_id IS NOT NULL"),
         ),
+        Index(
+            "uq_ingestion_items_source_id_url_normalized_no_external_id",
+            "source_id",
+            "url_normalized",
+            unique=True,
+            postgresql_where=text("external_id IS NULL AND url_normalized IS NOT NULL"),
+        ),
     )
 
     source_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("sources.id"), nullable=False)

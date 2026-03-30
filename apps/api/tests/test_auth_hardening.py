@@ -6,6 +6,7 @@ from types import SimpleNamespace
 from uuid import uuid4
 
 from fastapi.testclient import TestClient
+from starlette.requests import Request
 
 from rifthub_backend.auth.service import AuthError, CurrentSession, SessionAuthResult
 from rifthub_backend.config import Settings
@@ -229,3 +230,43 @@ def test_old_session_cookie_is_rejected_after_logout(monkeypatch) -> None:
 
     assert me_response.status_code == 401
     assert me_response.json()["error"]["code"] == "unauthenticated"
+
+
+def make_request(*, client_host: str, headers: dict[str, str] | None = None) -> Request:
+    raw_headers = [
+        (name.lower().encode("latin-1"), value.encode("latin-1"))
+        for name, value in (headers or {}).items()
+    ]
+    scope = {
+        "type": "http",
+        "method": "POST",
+        "path": "/v1/auth/login",
+        "headers": raw_headers,
+        "client": (client_host, 12345),
+    }
+    return Request(scope)
+
+
+def test_client_ip_prefers_forwarded_for_from_trusted_proxy() -> None:
+    settings = make_settings()
+    request = make_request(
+        client_host="127.0.0.1",
+        headers={"x-forwarded-for": "203.0.113.9, 127.0.0.1"},
+    )
+
+    assert auth_module._client_ip(request, settings) == "203.0.113.9"
+
+
+def test_client_ip_ignores_forwarded_for_from_untrusted_proxy() -> None:
+    settings = Settings(
+        **{
+            **make_settings().__dict__,
+            "trusted_proxy_ips": (),
+        }
+    )
+    request = make_request(
+        client_host="198.51.100.20",
+        headers={"x-forwarded-for": "203.0.113.9"},
+    )
+
+    assert auth_module._client_ip(request, settings) == "198.51.100.20"

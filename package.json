@@ -11,10 +11,12 @@
     "api:run": "uv run --package rifthub-api rifthub-api",
     "worker:dev": "uv run --package rifthub-worker rifthub-worker",
     "api:test": "uv run --package rifthub-api pytest apps/api/tests",
-    "db:up": "docker compose up -d postgres",
+    "db:up": "docker compose up -d postgres redis",
     "db:down": "docker compose down",
-    "db:logs": "docker compose logs -f postgres",
+    "db:logs": "docker compose logs -f postgres redis",
     "db:seed:feed": "uv run --package rifthub-api python scripts/seed-data/seed-dev-feed.py",
+    "db:seed:sources": "uv run --package rifthub-api python scripts/seed-data/seed-approved-sources.py",
+    "db:set-role": "uv run --package rifthub-api python scripts/admin/set-user-role.py",
     "db:upgrade": "uv run --package rifthub-api alembic -c apps/api/alembic.ini upgrade head",
     "db:downgrade": "uv run --package rifthub-api alembic -c apps/api/alembic.ini downgrade -1"
   }

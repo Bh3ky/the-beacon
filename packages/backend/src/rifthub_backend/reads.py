@@ -114,13 +114,13 @@ def _utcnow() -> datetime:
     return datetime.now(UTC)
 
 
-def encode_feed_cursor(payload: dict[str, str | float]) -> str:
+def encode_feed_cursor(payload: dict[str, str | float | int]) -> str:
     # Stable key ordering keeps opaque cursors deterministic across identical payloads.
     raw = json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8")
     return base64.urlsafe_b64encode(raw).decode("ascii")
 
 
-def decode_feed_cursor(cursor: str, *, kind: FeedKind) -> dict[str, str | float]:
+def decode_feed_cursor(cursor: str, *, kind: FeedKind) -> dict[str, str | float | int]:
     try:
         decoded = base64.urlsafe_b64decode(cursor.encode("ascii"))
         payload = json.loads(decoded.decode("utf-8"))
@@ -227,7 +227,19 @@ def _base_post_query() -> Select[tuple[Post]]:
     return (
         select(Post)
         .options(joinedload(Post.author), joinedload(Post.domain))
-        .where(Post.status == PostStatus.ACTIVE)
+        .where(
+            Post.status == PostStatus.ACTIVE,
+            or_(Post.domain_id.is_(None), Post.domain.has(Domain.is_blocked.is_(False))),
+        )
+    )
+
+
+def _ranked_post_ordering() -> tuple:
+    return (
+        desc(Post.rank_score),
+        desc(Post.submitted_at),
+        desc(Post.comment_count),
+        desc(Post.id),
     )
 
 
@@ -245,10 +257,24 @@ def _apply_feed_cursor(
         cursor_id = UUID(str(payload["id"]))
         if kind in {"top", "ask", "show"}:
             rank_score = float(payload["rank_score"])
+            submitted_at = datetime.fromisoformat(str(payload["submitted_at"]))
+            comment_count = int(payload["comment_count"])
             return query.where(
                 or_(
                     Post.rank_score < rank_score,
-                    and_(Post.rank_score == rank_score, Post.id < cursor_id),
+                    and_(
+                        Post.rank_score == rank_score,
+                        or_(
+                            Post.submitted_at < submitted_at,
+                            and_(
+                                Post.submitted_at == submitted_at,
+                                or_(
+                                    Post.comment_count < comment_count,
+                                    and_(Post.comment_count == comment_count, Post.id < cursor_id),
+                                ),
+                            ),
+                        ),
+                    ),
                 )
             )
 
@@ -309,6 +335,8 @@ def _feed_page_info(*, kind: FeedKind, posts: list[Post], has_next_page: bool) -
             {
                 "kind": kind,
                 "rank_score": last_post.rank_score,
+                "submitted_at": last_post.submitted_at.isoformat(),
+                "comment_count": last_post.comment_count,
                 "id": str(last_post.id),
             }
         )
@@ -334,11 +362,11 @@ async def _get_feed(
 ) -> FeedPage:
     query = _base_post_query()
     if kind == "top":
-        query = query.order_by(desc(Post.rank_score), desc(Post.id))
+        query = query.where(Post.post_type != PostType.JOB).order_by(*_ranked_post_ordering())
     elif kind == "ask":
-        query = query.where(Post.category == Category.ASK).order_by(desc(Post.rank_score), desc(Post.id))
+        query = query.where(Post.category == Category.ASK).order_by(*_ranked_post_ordering())
     elif kind == "show":
-        query = query.where(Post.category == Category.SHOW).order_by(desc(Post.rank_score), desc(Post.id))
+        query = query.where(Post.category == Category.SHOW).order_by(*_ranked_post_ordering())
     elif kind == "new":
         query = query.order_by(desc(Post.submitted_at), desc(Post.id))
     else:
@@ -552,7 +580,7 @@ async def get_post_comments(
         )
     )
     if sort == "top":
-        query = query.order_by(desc(Comment.rank_score), desc(Comment.id))
+        query = query.order_by(desc(Comment.rank_score), desc(Comment.created_at), desc(Comment.id))
     elif sort == "new":
         query = query.order_by(desc(Comment.created_at), desc(Comment.id))
     else:

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import AsyncIterator
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 from uuid import uuid4
 
@@ -235,7 +235,8 @@ def test_create_link_post_duplicate_returns_409(monkeypatch) -> None:
 def test_create_job_post_with_body_only(monkeypatch) -> None:
     current_session = make_current_session()
 
-    async def fake_create_post(**_: object):
+    async def fake_create_post(**kwargs):
+        assert kwargs["payload"].job_expires_at is not None
         return make_post_read(post_type=PostType.JOB, body_markdown="Remote-friendly role", url=None)
 
     monkeypatch.setattr(posts_module, "create_post", fake_create_post)
@@ -256,6 +257,48 @@ def test_create_job_post_with_body_only(monkeypatch) -> None:
     assert response.status_code == 201
     assert response.json()["post"]["post_type"] == "job"
     assert response.json()["post"]["url"] is None
+
+
+def test_create_non_job_post_rejects_job_expiry(monkeypatch) -> None:
+    current_session = make_current_session()
+
+    with build_client(monkeypatch, current_session=current_session) as client:
+        _set_auth_cookies(client)
+        response = client.post(
+            "/v1/posts",
+            json={
+                "post_type": "text",
+                "category": "ask",
+                "title": "A text post",
+                "body_markdown": "Body",
+                "job_expires_at": (datetime.now(UTC) + timedelta(days=1)).isoformat(),
+            },
+            headers={"X-CSRF-Token": "csrf-token"},
+        )
+
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "validation_error"
+
+
+def test_create_job_post_rejects_expiry_beyond_thirty_days(monkeypatch) -> None:
+    current_session = make_current_session()
+
+    with build_client(monkeypatch, current_session=current_session) as client:
+        _set_auth_cookies(client)
+        response = client.post(
+            "/v1/posts",
+            json={
+                "post_type": "job",
+                "category": "jobs",
+                "title": "Senior Backend Engineer",
+                "body_markdown": "Remote-friendly role",
+                "job_expires_at": (datetime.now(UTC) + timedelta(days=31)).isoformat(),
+            },
+            headers={"X-CSRF-Token": "csrf-token"},
+        )
+
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "validation_error"
 
 
 def test_create_post_returns_403_for_suspended_user(monkeypatch) -> None:

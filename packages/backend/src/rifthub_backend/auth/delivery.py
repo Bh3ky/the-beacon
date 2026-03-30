@@ -25,8 +25,16 @@ class VerificationDeliveryRequest:
     expires_at: datetime
 
 
+@dataclass(frozen=True, slots=True)
+class VerificationDeliveryResult:
+    provider_message_id: str | None = None
+
+
 class VerificationDeliveryPort(Protocol):
-    async def send_verification(self, request: VerificationDeliveryRequest) -> None:
+    async def send_verification(
+        self,
+        request: VerificationDeliveryRequest,
+    ) -> VerificationDeliveryResult:
         """Send a verification message to the target user."""
 
 
@@ -36,18 +44,26 @@ def build_verification_url(*, settings: Settings, token: str) -> str:
 
 
 class NoopVerificationDelivery:
-    async def send_verification(self, request: VerificationDeliveryRequest) -> None:
+    async def send_verification(
+        self,
+        request: VerificationDeliveryRequest,
+    ) -> VerificationDeliveryResult:
         logger.debug("Skipping verification delivery for %s", request.recipient_email)
+        return VerificationDeliveryResult()
 
 
 class LoggingVerificationDelivery:
-    async def send_verification(self, request: VerificationDeliveryRequest) -> None:
+    async def send_verification(
+        self,
+        request: VerificationDeliveryRequest,
+    ) -> VerificationDeliveryResult:
         logger.info(
             "Verification link for %s (%s): %s",
             request.username,
             request.recipient_email,
             request.verification_url,
         )
+        return VerificationDeliveryResult()
 
 
 class MailpitVerificationDelivery:
@@ -64,10 +80,13 @@ class MailpitVerificationDelivery:
         self._port = port
         self._starttls = starttls
 
-    async def send_verification(self, request: VerificationDeliveryRequest) -> None:
-        await asyncio.to_thread(self._send_sync, request)
+    async def send_verification(
+        self,
+        request: VerificationDeliveryRequest,
+    ) -> VerificationDeliveryResult:
+        return await asyncio.to_thread(self._send_sync, request)
 
-    def _send_sync(self, request: VerificationDeliveryRequest) -> None:
+    def _send_sync(self, request: VerificationDeliveryRequest) -> VerificationDeliveryResult:
         message = EmailMessage()
         message["Subject"] = "Verify your RiftHub account"
         message["From"] = self._from_email
@@ -89,6 +108,7 @@ class MailpitVerificationDelivery:
             if self._starttls:
                 smtp.starttls()
             smtp.send_message(message)
+        return VerificationDeliveryResult()
 
 
 class ResendVerificationDelivery:
@@ -103,10 +123,13 @@ class ResendVerificationDelivery:
         self._api_key = api_key
         self._from_email = from_email
 
-    async def send_verification(self, request: VerificationDeliveryRequest) -> None:
-        await asyncio.to_thread(self._send_sync, request)
+    async def send_verification(
+        self,
+        request: VerificationDeliveryRequest,
+    ) -> VerificationDeliveryResult:
+        return await asyncio.to_thread(self._send_sync, request)
 
-    def _send_sync(self, request: VerificationDeliveryRequest) -> None:
+    def _send_sync(self, request: VerificationDeliveryRequest) -> VerificationDeliveryResult:
         payload = {
             "from": self._from_email,
             "to": [request.recipient_email],
@@ -137,6 +160,7 @@ class ResendVerificationDelivery:
             with urllib_request.urlopen(request_obj, timeout=10) as response:
                 if response.status >= 400:
                     raise RuntimeError(f"Resend returned unexpected status {response.status}.")
+                raw_body = response.read().decode("utf-8", errors="replace")
         except urllib_error.HTTPError as exc:  # pragma: no cover - network/provider error handling
             detail = exc.read().decode("utf-8", errors="replace")
             raise RuntimeError(
@@ -144,6 +168,21 @@ class ResendVerificationDelivery:
             ) from exc
         except urllib_error.URLError as exc:  # pragma: no cover - network/provider error handling
             raise RuntimeError(f"Resend email delivery failed: {exc.reason}") from exc
+
+        provider_message_id = None
+        if raw_body:
+            try:
+                parsed = json.loads(raw_body)
+            except json.JSONDecodeError:
+                logger.warning("Resend returned non-JSON body for verification delivery.")
+            else:
+                if isinstance(parsed, dict):
+                    if isinstance(parsed.get("id"), str):
+                        provider_message_id = parsed["id"]
+                    elif isinstance(parsed.get("data"), dict) and isinstance(parsed["data"].get("id"), str):
+                        provider_message_id = parsed["data"]["id"]
+
+        return VerificationDeliveryResult(provider_message_id=provider_message_id)
 
 
 def get_verification_delivery(settings: Settings) -> VerificationDeliveryPort:

@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 import logging
+from typing import Literal
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import delete, select
@@ -35,6 +36,9 @@ logger = logging.getLogger(__name__)
 
 _DUMMY_PASSWORD_HASH = hash_password("dummy-password-for-timing-parity")
 ACTIVE_VERIFICATION_TOKEN_CONSTRAINT_NAME = "uq_user_verification_tokens_active_user_id"
+VERIFICATION_DELIVERY_PENDING = "pending"
+VERIFICATION_DELIVERY_SENT = "sent"
+VERIFICATION_DELIVERY_FAILED = "failed"
 
 
 @dataclass(slots=True)
@@ -48,6 +52,7 @@ class AuthError(Exception):
 @dataclass(slots=True)
 class PendingRegistration:
     user: User
+    verification_delivery_status: Literal["sent", "failed"]
     verification_token: str | None = None
 
 
@@ -109,30 +114,54 @@ async def _create_verification_token(
     user: User,
     settings: Settings,
     now: datetime,
-) -> tuple[str, datetime]:
+) -> tuple[UserVerificationToken, str, datetime]:
     await db.execute(delete(UserVerificationToken).where(UserVerificationToken.user_id == user.id))
 
     raw_token = generate_opaque_token()
     expires_at = _verification_expiry(now=now, settings=settings)
-    db.add(
-        UserVerificationToken(
-            user_id=user.id,
-            token_hash=hash_opaque_token(raw_token),
-            expires_at=expires_at,
-            created_at=now,
-        )
+    token_row = UserVerificationToken(
+        user_id=user.id,
+        token_hash=hash_opaque_token(raw_token),
+        expires_at=expires_at,
+        delivery_status=VERIFICATION_DELIVERY_PENDING,
+        delivery_attempt_count=0,
+        created_at=now,
     )
+    db.add(token_row)
     await db.flush()
-    return raw_token, expires_at
+    return token_row, raw_token, expires_at
+
+
+def _apply_delivery_result(
+    *,
+    token_row: UserVerificationToken,
+    attempted_at: datetime,
+    status: Literal["sent", "failed"],
+    provider_message_id: str | None = None,
+    error_message: str | None = None,
+) -> None:
+    token_row.delivery_status = status
+    token_row.delivery_attempt_count += 1
+    token_row.last_delivery_attempted_at = attempted_at
+    token_row.delivery_provider_message_id = provider_message_id
+    token_row.delivery_error = error_message
+
+    if status == VERIFICATION_DELIVERY_SENT:
+        token_row.delivery_sent_at = attempted_at
+        token_row.delivery_failed_at = None
+    else:
+        token_row.delivery_failed_at = attempted_at
 
 
 async def _dispatch_verification(
     *,
+    db: AsyncSession,
+    token_row: UserVerificationToken,
     settings: Settings,
     user: User,
     raw_token: str,
     expires_at: datetime,
-) -> None:
+) -> Literal["sent", "failed"]:
     delivery = get_verification_delivery(settings)
     request = VerificationDeliveryRequest(
         recipient_email=user.email,
@@ -140,10 +169,34 @@ async def _dispatch_verification(
         verification_url=build_verification_url(settings=settings, token=raw_token),
         expires_at=expires_at,
     )
+    attempted_at = _utcnow()
+
     try:
-        await delivery.send_verification(request)
-    except Exception:  # pragma: no cover - defensive logging around external delivery
+        result = await delivery.send_verification(request)
+        _apply_delivery_result(
+            token_row=token_row,
+            attempted_at=attempted_at,
+            status=VERIFICATION_DELIVERY_SENT,
+            provider_message_id=result.provider_message_id,
+        )
+    except Exception as exc:  # pragma: no cover - defensive logging around external delivery
         logger.exception("Verification delivery failed for %s", user.email)
+        _apply_delivery_result(
+            token_row=token_row,
+            attempted_at=attempted_at,
+            status=VERIFICATION_DELIVERY_FAILED,
+            error_message=str(exc),
+        )
+
+    try:
+        await db.commit()
+    except Exception:  # pragma: no cover - defensive persistence logging
+        await db.rollback()
+        logger.exception("Failed to persist verification delivery result for %s", user.email)
+
+    if token_row.delivery_status == VERIFICATION_DELIVERY_SENT:
+        return VERIFICATION_DELIVERY_SENT
+    return VERIFICATION_DELIVERY_FAILED
 
 
 async def _create_session(
@@ -217,7 +270,7 @@ async def register_user(
     db.add(user)
     await db.flush()
 
-    raw_verification_token, expires_at = await _create_verification_token(
+    token_row, raw_verification_token, expires_at = await _create_verification_token(
         db=db,
         user=user,
         settings=settings,
@@ -225,7 +278,9 @@ async def register_user(
     )
     await db.commit()
     await db.refresh(user)
-    await _dispatch_verification(
+    delivery_status = await _dispatch_verification(
+        db=db,
+        token_row=token_row,
         settings=settings,
         user=user,
         raw_token=raw_verification_token,
@@ -234,7 +289,10 @@ async def register_user(
 
     logger.info("Created pending account for %s", user.username)
 
-    return PendingRegistration(user=user)
+    return PendingRegistration(
+        user=user,
+        verification_delivery_status=delivery_status,
+    )
 
 
 async def verify_account(
@@ -295,7 +353,7 @@ async def resend_verification(
 
     now = _utcnow()
     try:
-        raw_verification_token, expires_at = await _create_verification_token(
+        token_row, raw_verification_token, expires_at = await _create_verification_token(
             db=db,
             user=user,
             settings=settings,
@@ -308,6 +366,8 @@ async def resend_verification(
             return
         raise
     await _dispatch_verification(
+        db=db,
+        token_row=token_row,
         settings=settings,
         user=user,
         raw_token=raw_verification_token,

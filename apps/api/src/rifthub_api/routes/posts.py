@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from datetime import datetime
-from typing import Literal
+from datetime import UTC, datetime
+from typing import Literal, Self
 from uuid import UUID
 
 from fastapi import APIRouter, Query, Request, status
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
+from pydantic_core import PydanticCustomError
 
 from rifthub_backend.creation import (
     CreateCommentInput,
@@ -14,6 +15,7 @@ from rifthub_backend.creation import (
     create_post,
 )
 from rifthub_backend.db.types import Category, PostType, UserRole
+from rifthub_backend.job_expiry import normalize_new_job_expiry
 from rifthub_backend.reads import CommentSort, get_post_comments, get_post_detail
 from rifthub_backend.voting import remove_post_vote, vote_on_post
 
@@ -30,6 +32,18 @@ class CreatePostRequest(BaseModel):
     url: str | None = None
     body_markdown: str | None = None
     job_expires_at: datetime | None = None
+
+    @model_validator(mode="after")
+    def validate_job_expiry(self) -> Self:
+        try:
+            self.job_expires_at = normalize_new_job_expiry(
+                post_type=self.post_type,
+                requested_job_expires_at=self.job_expires_at,
+                now=datetime.now(UTC),
+            )
+        except ValueError as exc:
+            raise PydanticCustomError("value_error", str(exc)) from exc
+        return self
 
 
 class CreateCommentRequest(BaseModel):

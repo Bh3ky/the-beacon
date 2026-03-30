@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 from datetime import datetime
+import ipaddress
 from uuid import UUID
 
 from fastapi import APIRouter, Request, Response, status
 from pydantic import BaseModel, ConfigDict
+from typing import Literal
 
 from rifthub_backend.auth.security import canonicalize_email
 from rifthub_backend.auth.service import (
@@ -68,6 +70,7 @@ class ResendVerificationRequest(BaseModel):
 
 class RegisterResponse(BaseModel):
     verification_required: bool
+    verification_delivery_status: Literal["sent", "failed"]
     user: UserPayload
 
 
@@ -128,8 +131,50 @@ def _clear_auth_cookies(*, response: Response, settings: Settings) -> None:
     )
 
 
-def _client_ip(request: Request) -> str:
-    return request.client.host if request.client is not None else "unknown"
+def _is_trusted_proxy(host: str, settings: Settings) -> bool:
+    if not host:
+        return False
+    if "*" in settings.trusted_proxy_ips:
+        return True
+
+    try:
+        client_ip = ipaddress.ip_address(host)
+    except ValueError:
+        return host in settings.trusted_proxy_ips
+
+    for raw_proxy in settings.trusted_proxy_ips:
+        try:
+            network = ipaddress.ip_network(raw_proxy, strict=False)
+        except ValueError:
+            if host == raw_proxy:
+                return True
+            continue
+        if client_ip in network:
+            return True
+    return False
+
+
+def _forwarded_client_ip(request: Request) -> str | None:
+    forwarded_for = request.headers.get("x-forwarded-for")
+    if forwarded_for:
+        first_hop = forwarded_for.split(",", 1)[0].strip()
+        if first_hop:
+            return first_hop
+
+    real_ip = request.headers.get("x-real-ip")
+    if real_ip and real_ip.strip():
+        return real_ip.strip()
+
+    return None
+
+
+def _client_ip(request: Request, settings: Settings) -> str:
+    direct_client_ip = request.client.host if request.client is not None else "unknown"
+    if _is_trusted_proxy(direct_client_ip, settings):
+        forwarded_client_ip = _forwarded_client_ip(request)
+        if forwarded_client_ip:
+            return forwarded_client_ip
+    return direct_client_ip
 
 
 def _serialize_user(user: User) -> UserPayload:
@@ -143,7 +188,7 @@ async def register(
     db: DbSession,
     settings: AppSettings,
 ) -> RegisterResponse:
-    client_ip = _client_ip(request)
+    client_ip = _client_ip(request, settings)
     await rate_limiter.check(
         key=f"register:hour:{client_ip}",
         limit=3,
@@ -163,7 +208,11 @@ async def register(
         email=payload.email,
         password=payload.password,
     )
-    return RegisterResponse(verification_required=True, user=_serialize_user(result.user))
+    return RegisterResponse(
+        verification_required=True,
+        verification_delivery_status=result.verification_delivery_status,
+        user=_serialize_user(result.user),
+    )
 
 
 @router.post("/resend-verification", status_code=status.HTTP_204_NO_CONTENT)
@@ -174,7 +223,7 @@ async def resend_verification(
     db: DbSession,
     settings: AppSettings,
 ) -> Response:
-    client_ip = _client_ip(request)
+    client_ip = _client_ip(request, settings)
     await rate_limiter.check(
         key=f"resend:ip:{client_ip}",
         limit=3,
@@ -209,7 +258,7 @@ async def verify(
     db: DbSession,
     settings: AppSettings,
 ) -> AuthenticatedResponse:
-    client_ip = _client_ip(request)
+    client_ip = _client_ip(request, settings)
     await rate_limiter.check(
         key=f"verify:{client_ip}",
         limit=10,
@@ -233,7 +282,7 @@ async def login(
     db: DbSession,
     settings: AppSettings,
 ) -> AuthenticatedResponse:
-    client_ip = _client_ip(request)
+    client_ip = _client_ip(request, settings)
     await rate_limiter.check(
         key=f"login:ip:{client_ip}",
         limit=5,

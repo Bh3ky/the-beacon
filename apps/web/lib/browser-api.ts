@@ -5,9 +5,13 @@ import type {
   CommentResponse,
   CommentVoteResponse,
   FlagResponse,
+  FlagQueueResponse,
+  IngestionReviewQueueResponse,
+  ModerationActionResponse,
   PostResponse,
   PostVoteResponse,
   RegisterResponse,
+  SourceHealthResponse,
 } from "@/lib/api/types";
 
 const CSRF_COOKIE_NAME = "rifthub_csrf";
@@ -221,4 +225,87 @@ export async function createFlag(payload: {
       notes: payload.notes ?? null,
     }),
   });
+}
+
+export async function fetchModerationFlags(limit = 50): Promise<FlagQueueResponse> {
+  return browserApiFetch<FlagQueueResponse>(`moderation/flags?limit=${limit}`);
+}
+
+export async function fetchIngestionReviewQueue(limit = 50): Promise<IngestionReviewQueueResponse> {
+  return browserApiFetch<IngestionReviewQueueResponse>(`moderation/ingestion/items?limit=${limit}`);
+}
+
+export async function fetchIngestionSourceHealth(
+  limit = 20,
+  failuresOnly = true,
+): Promise<SourceHealthResponse> {
+  return browserApiFetch<SourceHealthResponse>(
+    `moderation/ingestion/sources?limit=${limit}&failures_only=${failuresOnly ? "true" : "false"}`,
+  );
+}
+
+type ModerationPayload = {
+  reason?: string | null;
+  flag_id?: string | null;
+};
+
+function moderationAction(
+  path: string,
+  payload: ModerationPayload,
+): Promise<ModerationActionResponse> {
+  return browserApiFetch<ModerationActionResponse>(path, {
+    method: "POST",
+    body: JSON.stringify({
+      reason: payload.reason ?? null,
+      flag_id: payload.flag_id ?? null,
+    }),
+  });
+}
+
+export async function dismissFlag(flagId: string): Promise<FlagResponse> {
+  return browserApiFetch<FlagResponse>(`moderation/flags/${flagId}/dismiss`, {
+    method: "POST",
+  });
+}
+
+export async function removeModeratedPost(
+  postId: string,
+  payload: ModerationPayload = {},
+): Promise<ModerationActionResponse> {
+  return moderationAction(`moderation/posts/${postId}/remove`, payload);
+}
+
+export async function removeModeratedComment(
+  commentId: string,
+  payload: ModerationPayload = {},
+): Promise<ModerationActionResponse> {
+  return moderationAction(`moderation/comments/${commentId}/remove`, payload);
+}
+
+export async function suspendModeratedUser(
+  userId: string,
+  payload: ModerationPayload = {},
+): Promise<ModerationActionResponse> {
+  return moderationAction(`moderation/users/${userId}/suspend`, payload);
+}
+
+export async function banModeratedUser(
+  userId: string,
+  payload: ModerationPayload = {},
+): Promise<ModerationActionResponse> {
+  return moderationAction(`moderation/users/${userId}/ban`, payload);
+}
+
+export async function approveIngestionItem(
+  itemId: string,
+  payload: ModerationPayload = {},
+): Promise<ModerationActionResponse> {
+  return moderationAction(`moderation/ingestion/items/${itemId}/approve`, payload);
+}
+
+export async function rejectIngestionItem(
+  itemId: string,
+  payload: ModerationPayload = {},
+): Promise<ModerationActionResponse> {
+  return moderationAction(`moderation/ingestion/items/${itemId}/reject`, payload);
 }
