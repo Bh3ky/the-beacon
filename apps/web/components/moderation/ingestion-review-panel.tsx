@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 
 import type {
   IngestionReviewItemPayload,
@@ -15,6 +15,10 @@ import {
 
 type IngestionReviewPanelProps = {
   initialItems: IngestionReviewItemPayload[];
+  // NOTE: Source health is rendered as a read-only snapshot of the server-side
+  // state at page load time. It is intentionally not kept in local React state
+  // because there are no user actions that mutate it from this panel. If live
+  // polling or revalidation is added later, lift this into useState/SWR.
   initialSourceHealth: SourceHealthPayload[];
   currentUser: UserPayload;
 };
@@ -42,38 +46,47 @@ export function IngestionReviewPanel({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+  // Derived once from a prop that never changes within this component's lifetime.
+  // No useMemo needed — this is a simple boolean, not a computed collection.
   const canReview = currentUser.role === "admin";
 
-  async function handleAction(item: IngestionReviewItemPayload, action: "approve" | "reject") {
-    const requestKey = `${item.id}:${action}`;
-    setPendingAction(requestKey);
-    setErrorMessage(null);
-    setSuccessMessage(null);
+  const handleAction = useCallback(
+    async (item: IngestionReviewItemPayload, action: "approve" | "reject") => {
+      const requestKey = `${item.id}:${action}`;
+      setPendingAction(requestKey);
+      setErrorMessage(null);
+      setSuccessMessage(null);
 
-    try {
-      const reason = reasonByItemId[item.id]?.trim() || null;
-      if (action === "approve") {
-        await approveIngestionItem(item.id, { reason });
-      } else {
-        await rejectIngestionItem(item.id, { reason });
+      try {
+        const reason = reasonByItemId[item.id]?.trim() || null;
+        if (action === "approve") {
+          await approveIngestionItem(item.id, { reason });
+        } else {
+          await rejectIngestionItem(item.id, { reason });
+        }
+        setItems((current) => current.filter((entry) => entry.id !== item.id));
+        setReasonByItemId((current) => {
+          const next = { ...current };
+          delete next[item.id];
+          return next;
+        });
+        setSuccessMessage("Ingestion queue updated.");
+
+        // Auto-dismiss success feedback after 4 s so stale messages don't
+        // linger while the reviewer moves through the remaining queue.
+        setTimeout(() => setSuccessMessage(null), 4000);
+      } catch (error) {
+        if (error instanceof BrowserApiError) {
+          setErrorMessage(error.message);
+        } else {
+          setErrorMessage("Could not complete the ingestion review action.");
+        }
+      } finally {
+        setPendingAction(null);
       }
-      setItems((current) => current.filter((entry) => entry.id !== item.id));
-      setReasonByItemId((current) => {
-        const next = { ...current };
-        delete next[item.id];
-        return next;
-      });
-      setSuccessMessage("Ingestion queue updated.");
-    } catch (error) {
-      if (error instanceof BrowserApiError) {
-        setErrorMessage(error.message);
-      } else {
-        setErrorMessage("Could not complete the ingestion review action.");
-      }
-    } finally {
-      setPendingAction(null);
-    }
-  }
+    },
+    [reasonByItemId]
+  );
 
   return (
     <section className="pt-16">
@@ -125,7 +138,12 @@ export function IngestionReviewPanel({
                 <div className="flex flex-wrap items-center gap-x-5 gap-y-3 font-mono text-[length:var(--fs-meta)] uppercase tracking-[0.14em] text-[var(--color-text-dim)]">
                   <span>{item.source.name}</span>
                   <span>{item.source.source_type}</span>
-                  <span>{item.detected_category ?? "uncategorized"}</span>
+                  {/*
+                    FIX: Use || instead of ?? so that empty strings also fall
+                    through to the fallback. The API may return "" rather than
+                    null for an uncategorized item, and ?? wouldn't catch that.
+                  */}
+                  <span>{item.detected_category || "uncategorized"}</span>
                   <span>{formatTimestamp(item.discovered_at)}</span>
                   <span className="text-[var(--color-accent)]">{item.ingestion_status}</span>
                 </div>

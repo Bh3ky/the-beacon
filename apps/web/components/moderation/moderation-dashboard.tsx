@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 
 import type { FlagQueueItemPayload, UserPayload } from "@/lib/api/types";
 import {
@@ -18,6 +18,14 @@ type ModerationDashboardProps = {
 };
 
 type ActionKind = "dismiss" | "remove_post" | "remove_comment" | "suspend_user" | "ban_user";
+
+// Actions that are irreversible and require explicit confirmation before firing.
+const DESTRUCTIVE_ACTIONS = new Set<ActionKind>(["suspend_user", "ban_user"]);
+
+const DESTRUCTIVE_LABELS: Record<string, string> = {
+  suspend_user: "suspend this user",
+  ban_user: "permanently ban this user",
+};
 
 function formatTimestamp(value: string): string {
   return new Intl.DateTimeFormat("en-US", {
@@ -38,44 +46,60 @@ export function ModerationDashboard({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  async function handleAction(item: FlagQueueItemPayload, action: ActionKind) {
-    const requestKey = `${item.flag.id}:${action}`;
-    setPendingAction(requestKey);
-    setErrorMessage(null);
-    setSuccessMessage(null);
-
-    try {
-      const reason = reasonByFlagId[item.flag.id]?.trim() || null;
-
-      if (action === "dismiss") {
-        await dismissFlag(item.flag.id);
-      } else if (action === "remove_post") {
-        await removeModeratedPost(item.target.id, { reason, flag_id: item.flag.id });
-      } else if (action === "remove_comment") {
-        await removeModeratedComment(item.target.id, { reason, flag_id: item.flag.id });
-      } else if (action === "suspend_user") {
-        await suspendModeratedUser(item.target.id, { reason, flag_id: item.flag.id });
-      } else {
-        await banModeratedUser(item.target.id, { reason, flag_id: item.flag.id });
+  const handleAction = useCallback(
+    async (item: FlagQueueItemPayload, action: ActionKind) => {
+      // Guard: require explicit confirmation for destructive actions to prevent misclicks.
+      if (DESTRUCTIVE_ACTIONS.has(action)) {
+        const label = DESTRUCTIVE_LABELS[action] ?? action.replace(/_/g, " ");
+        const confirmed = window.confirm(
+          `Are you sure you want to ${label}? This action is not immediately reversible.`
+        );
+        if (!confirmed) return;
       }
 
-      setItems((current) => current.filter((entry) => entry.flag.id !== item.flag.id));
-      setReasonByFlagId((current) => {
-        const next = { ...current };
-        delete next[item.flag.id];
-        return next;
-      });
-      setSuccessMessage("Queue updated.");
-    } catch (error) {
-      if (error instanceof BrowserApiError) {
-        setErrorMessage(error.message);
-      } else {
-        setErrorMessage("Could not complete the moderation action.");
+      const requestKey = `${item.flag.id}:${action}`;
+      setPendingAction(requestKey);
+      setErrorMessage(null);
+      setSuccessMessage(null);
+
+      try {
+        const reason = reasonByFlagId[item.flag.id]?.trim() || null;
+
+        if (action === "dismiss") {
+          await dismissFlag(item.flag.id);
+        } else if (action === "remove_post") {
+          await removeModeratedPost(item.target.id, { reason, flag_id: item.flag.id });
+        } else if (action === "remove_comment") {
+          await removeModeratedComment(item.target.id, { reason, flag_id: item.flag.id });
+        } else if (action === "suspend_user") {
+          await suspendModeratedUser(item.target.id, { reason, flag_id: item.flag.id });
+        } else {
+          await banModeratedUser(item.target.id, { reason, flag_id: item.flag.id });
+        }
+
+        setItems((current) => current.filter((entry) => entry.flag.id !== item.flag.id));
+        setReasonByFlagId((current) => {
+          const next = { ...current };
+          delete next[item.flag.id];
+          return next;
+        });
+        setSuccessMessage("Queue updated.");
+
+        // Auto-dismiss the success message after 4 s so stale feedback
+        // doesn't linger when the moderator moves to the next item.
+        setTimeout(() => setSuccessMessage(null), 4000);
+      } catch (error) {
+        if (error instanceof BrowserApiError) {
+          setErrorMessage(error.message);
+        } else {
+          setErrorMessage("Could not complete the moderation action.");
+        }
+      } finally {
+        setPendingAction(null);
       }
-    } finally {
-      setPendingAction(null);
-    }
-  }
+    },
+    [reasonByFlagId]
+  );
 
   return (
     <section className="pt-8">
@@ -122,14 +146,19 @@ export function ModerationDashboard({
             const reasonValue = reasonByFlagId[item.flag.id] ?? "";
             const isBusy = pendingAction !== null && pendingAction.startsWith(`${item.flag.id}:`);
 
+            // FIX: Use item.flag.target_type as the discriminator — not item.target.target_type.
+            // The target payload does not carry its own type field; that lives on the flag.
+            const targetType = item.flag.target_type;
+
             return (
               <article
                 key={item.flag.id}
                 className="border border-[var(--color-border)] bg-[rgba(13,11,8,0.18)] px-7 py-7"
               >
                 <div className="flex flex-wrap items-center gap-x-5 gap-y-3 font-mono text-[length:var(--fs-meta)] uppercase tracking-[0.14em] text-[var(--color-text-dim)]">
-                  <span>{item.flag.target_type}</span>
-                  <span>{item.flag.reason_code.replace("_", " ")}</span>
+                  <span>{targetType}</span>
+                  {/* FIX: replaceAll handles multi-underscore reason codes like "spam_and_abuse" correctly. */}
+                  <span>{item.flag.reason_code.replaceAll("_", " ")}</span>
                   <span>{formatTimestamp(item.flag.created_at)}</span>
                   <span>reported by {item.reporter.username}</span>
                   <span className="text-[var(--color-accent)]">{item.target.status}</span>
@@ -139,7 +168,8 @@ export function ModerationDashboard({
                   <h2 className="font-display text-[length:var(--fs-heading-success)] tracking-[-0.03em] text-[var(--color-text)]">
                     {item.target.title ?? item.target.username ?? "Flagged content"}
                   </h2>
-                  {item.target.username && item.target.target_type !== "user" ? (
+                  {/* FIX: Guard uses item.flag.target_type, not item.target.target_type. */}
+                  {item.target.username && targetType !== "user" ? (
                     <p className="mt-2 font-mono text-[length:var(--fs-meta)] text-[var(--color-text-dim)]">
                       author: {item.target.username}
                     </p>
@@ -189,7 +219,8 @@ export function ModerationDashboard({
                     {pendingAction === `${item.flag.id}:dismiss` ? "dismissing…" : "dismiss"}
                   </button>
 
-                  {item.target.target_type === "post" ? (
+                  {/* FIX: All three action buttons now branch on targetType (item.flag.target_type). */}
+                  {targetType === "post" ? (
                     <button
                       type="button"
                       disabled={isBusy}
@@ -200,7 +231,7 @@ export function ModerationDashboard({
                     </button>
                   ) : null}
 
-                  {item.target.target_type === "comment" ? (
+                  {targetType === "comment" ? (
                     <button
                       type="button"
                       disabled={isBusy}
@@ -211,7 +242,7 @@ export function ModerationDashboard({
                     </button>
                   ) : null}
 
-                  {item.target.target_type === "user" ? (
+                  {targetType === "user" ? (
                     <button
                       type="button"
                       disabled={isBusy}
@@ -222,7 +253,7 @@ export function ModerationDashboard({
                     </button>
                   ) : null}
 
-                  {item.target.target_type === "user" && currentUser.role === "admin" ? (
+                  {targetType === "user" && currentUser.role === "admin" ? (
                     <button
                       type="button"
                       disabled={isBusy}
