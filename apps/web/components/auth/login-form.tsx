@@ -83,13 +83,13 @@ export function LoginForm({ nextHref, registeredEmail }: LoginFormProps) {
         />
 
         {formError ? (
-          <p className="font-mono text-(length:--fs-body-base) text-(--color-error)">
+          <p className="font-mono text-xs text-(--color-error)">
             {formError}
           </p>
         ) : null}
 
         {resentNotice ? (
-          <p className="font-mono text-(length:--fs-body-base) text-(--color-accent)">
+          <p className="font-mono text-xs text-(--color-accent)">
             {resentNotice}
           </p>
         ) : null}
@@ -97,7 +97,7 @@ export function LoginForm({ nextHref, registeredEmail }: LoginFormProps) {
         <button
           type="submit"
           disabled={submitting}
-          className="w-full bg-(--color-accent) px-6 py-5 font-mono text-(length:--fs-body-base) font-bold uppercase tracking-[0.14em] text-(--color-nav-text-on-accent) transition-colors hover:bg-(--color-accent-hover) disabled:cursor-wait disabled:bg-(--color-accent-dim)"
+          className="w-full bg-(--color-accent) px-6 py-2 font-mono text-sm font-bold uppercase tracking-[0.12em] text-(--color-nav-text-on-accent) transition-colors hover:bg-(--color-accent-hover) disabled:cursor-wait disabled:bg-(--color-accent-dim)"
         >
           {submitting ? "signing in…" : "sign in →"}
         </button>

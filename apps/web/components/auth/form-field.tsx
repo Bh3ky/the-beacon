@@ -37,7 +37,7 @@ export function FormField({
           {label}
         </label>
         {hint ? (
-          <span className="font-mono text-(length:--fs-label) text-(--color-text-dim)">
+          <span className="font-mono text-xs text-(--color-text-dim)">
             {hint}
           </span>
         ) : null}
@@ -52,7 +52,7 @@ export function FormField({
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           className={[
-            "w-full border bg-(--color-bg) px-4 py-4 font-mono text-(length:--fs-body-input) text-(--color-text) outline-none transition-colors",
+            "w-full border bg-(--color-bg) px-4 py-2 font-mono text-xs text-(--color-text) outline-none transition-colors placeholder:text-xs",
             isPassword ? "pr-14" : "",
             error
               ? "border-(--color-error)"
@@ -65,7 +65,7 @@ export function FormField({
           <button
             type="button"
             onClick={() => setRevealed((current) => !current)}
-            className="absolute right-4 top-1/2 -translate-y-1/2 font-mono text-(length:--fs-meta) text-(--color-text-dim) transition-colors hover:text-(--color-accent)"
+            className="absolute right-4 top-1/2 -translate-y-1/2 font-mono text-xs text-(--color-text-dim) transition-colors hover:text-(--color-accent)"
           >
             {revealed ? "hide" : "show"}
           </button>
@@ -73,7 +73,7 @@ export function FormField({
       </div>
 
       {error ? (
-        <span className="font-mono text-(length:--fs-label) text-(--color-error)">
+        <span className="font-mono text-xs text-(--color-error)">
           ↳ {error}
         </span>
       ) : null}

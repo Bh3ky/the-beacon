@@ -60,31 +60,31 @@ export async function AuthShell({
                       priority
                     />
                   </div>
-                  <span className="font-display text-[2.75rem] font-bold tracking-[-0.05em] text-(--color-text-dim)">
+                  <span className="font-display text-[1.25rem] font-bold tracking-[-0.05em] text-(--color-text-dim)">
                     RiftHub
                   </span>
                 </Link>
               </div>
 
-              <div className="mx-auto mt-30 max-w-3xl text-center">
-                <h1 className="font-display text-(length:--fs-heading-hero) leading-[1.18] tracking-[-0.05em] text-(--color-text)">
+              <div className="mx-auto mt-5 max-w-3xl text-center">
+                <h1 className="font-display text-2xl leading-[1.18] tracking-[-0.05em] text-(--color-text)">
                   Cut through the noise. <br />
                   Get closer to the{" "}
                   <span className="italic text-(--color-accent)">signal</span>.
                 </h1>
-                <p className="mx-auto mt-8 max-w-2xl whitespace-pre-line font-mono text-(length:--fs-body-comment) leading-[1.85] text-(--color-text-muted)">
+                <p className="mx-auto mt-8 max-w-2xl whitespace-pre-line font-mono text-xs leading-[1.85] text-(--color-text-muted)">
                   One feed. Zero algorithm.
                   {"\n"}
                   Real-time insights from the builders and founders shaping Africa's ecosystem.
                 </p>
               </div>
 
-              <div className="mx-auto mt-16 w-full max-w-lg border border-(--color-border-strong) bg-[rgba(13,11,8,0.58)] px-6 py-8 shadow-[0_24px_80px_rgba(0,0,0,0.28)] backdrop-blur-[2px] sm:px-8 sm:py-10">
+              <div className="mx-auto mt-16 w-full max-w-md border border-(--color-border-strong) bg-[rgba(13,11,8,0.58)] px-6 py-8 shadow-[0_24px_80px_rgba(0,0,0,0.28)] backdrop-blur-[2px] sm:px-8 sm:py-10">
                 <div className="flex border-b border-(--color-border)">
                   <Link
                     href="/login"
                     className={[
-                      "flex-1 border-b-2 px-6 py-4 text-center font-mono text-(length:--fs-body-base) lowercase tracking-[0.08em]",
+                      "flex-1 border-b-2 px-6 py-2 text-center font-mono text-xs lowercase tracking-[0.08em]",
                       activeTab === "login"
                         ? "border-(--color-accent) text-(--color-accent)"
                         : "border-transparent text-(--color-text-dim) hover:text-(--color-text-muted)",
@@ -95,7 +95,7 @@ export async function AuthShell({
                   <Link
                     href="/register"
                     className={[
-                      "flex-1 border-b-2 px-6 py-4 text-center font-mono text-(length:--fs-body-base) lowercase tracking-[0.08em]",
+                      "flex-1 border-b-2 px-6 py-2 text-center font-mono text-xs lowercase tracking-[0.08em]",
                       activeTab === "register"
                         ? "border-(--color-accent) text-(--color-accent)"
                         : "border-transparent text-(--color-text-dim) hover:text-(--color-text-muted)",
@@ -106,7 +106,7 @@ export async function AuthShell({
                 </div>
 
                 <div className="pt-8">
-                  <h2 className="text-center font-display text-(length:--fs-heading-form) tracking-[-0.04em] text-(--color-text)">
+                  <h2 className="text-center font-display text-lg tracking-[-0.04em] text-(--color-text)">
                     {heading}
                   </h2>
                   {subheading ? (
@@ -114,7 +114,7 @@ export async function AuthShell({
                       {subheading}
                     </p>
                   ) : null}
-                  <div className="mt-12">{children}</div>
+                  <div className="mt-4">{children}</div>
                 </div>
               </div>
 
