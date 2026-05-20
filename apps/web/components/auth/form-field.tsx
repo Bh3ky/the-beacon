@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useState } from "react";
 
 type FormFieldProps = {
@@ -9,7 +10,7 @@ type FormFieldProps = {
   onChange: (value: string) => void;
   placeholder?: string;
   error?: string | null;
-  hint?: string;
+  hint?: ReactNode;
 };
 
 export function FormField({

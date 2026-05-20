@@ -73,14 +73,14 @@ export function CommentComposer({
     return (
       <div className="space-y-4">
         <div className="rounded-sm border border-(--color-border-strong) bg-(--color-bg) p-0">
-          <div className="min-h-32 px-5 py-5 font-mono text-sm text-(--color-text-muted)">
+          <div className="min-h-32 px-5 py-5 font-mono text-xs text-(--color-text-muted)">
             Share your perspective...
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-5">
           <Link
             href={`/login?next=${encodeURIComponent(pathname || "/")}`}
-            className="inline-flex items-center bg-(--color-accent) px-2 py-4 font-mono text-(length:--fs-body-base) font-bold uppercase tracking-widest text-(--color-nav-text-on-accent) transition-colors hover:bg-(--color-accent-hover)"
+            className="inline-flex items-center bg-(--color-accent) px-2 py-4 font-mono text-xs font-bold uppercase tracking-widest text-black transition-colors hover:bg-(--color-accent-hover)"
           >
             sign in to comment
           </Link>
@@ -97,8 +97,8 @@ export function CommentComposer({
           onChange={(event) => setBody(event.target.value)}
           placeholder={compact ? "Write a reply…" : "Share your perspective..."}
           className={[
-            "w-full resize-y border-0 bg-transparent px-5 py-5 font-mono text-xs text-(--color-text) outline-none placeholder:text-(--color-text-muted)",
-            compact ? "min-h-32" : "min-h-52",
+            "w-full resize-y border-0 bg-transparent px-4 py-3 font-mono text-xs text-(--color-text) outline-none placeholder:text-(--color-text-muted)",
+            compact ? "min-h-28" : "min-h-32",
           ].join(" ")}
         />
       </div>
@@ -113,7 +113,7 @@ export function CommentComposer({
         <button
           type="submit"
           disabled={submitting}
-          className="inline-flex items-center bg-(--color-accent) px-10 py-2 font-mono text-(length:--fs-body-base) font-bold uppercase tracking-widest text-(--color-nav-text-on-accent) transition-colors hover:bg-(--color-accent-hover) disabled:cursor-wait disabled:bg-(--color-accent-dim)"
+          className="inline-flex items-center bg-(--color-accent) px-5 py-2 font-mono text-(length:--fs-body-base) font-bold uppercase tracking-widest text-(--color-nav-text-on-accent) transition-colors hover:bg-(--color-accent-hover) disabled:cursor-wait disabled:bg-(--color-accent-dim)"
         >
           {submitting ? "posting…" : buttonLabel}
         </button>

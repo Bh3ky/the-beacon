@@ -13,6 +13,43 @@ type FieldErrors = {
   password?: string;
 };
 
+function PasswordRequirementRings({ password }: { password: string }) {
+  const requirements = [
+    {
+      label: "12+ characters",
+      met: password.length >= 12,
+    },
+    {
+      label: "under 256 characters",
+      met: password.length <= 256,
+    },
+  ];
+  const metCount = requirements.filter((requirement) => requirement.met).length;
+  const hasInput = password.length > 0;
+
+  return (
+    <div
+      className="flex items-center gap-1.5"
+      aria-label={`${metCount} of ${requirements.length} password requirements met`}
+      title={requirements.map((requirement) => requirement.label).join(", ")}
+    >
+      {requirements.map((requirement) => (
+        <span
+          key={requirement.label}
+          className={[
+            "size-2 rounded-full border transition-all duration-300",
+            requirement.met
+              ? "scale-110 border-(--color-accent) bg-(--color-accent)"
+              : hasInput
+                ? "animate-pulse border-(--color-text-dim)"
+                : "border-(--color-border)",
+          ].join(" ")}
+        />
+      ))}
+    </div>
+  );
+}
+
 export function RegisterForm() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -164,7 +201,7 @@ export function RegisterForm() {
           value={password}
           onChange={setPassword}
           placeholder="••••••••"
-          hint="12+ characters required"
+          hint={<PasswordRequirementRings password={password} />}
         />
 
         {formError ? (
@@ -176,7 +213,7 @@ export function RegisterForm() {
         <button
           type="submit"
           disabled={submitting}
-          className="w-full bg-(--color-accent) px-6 py-5 font-mono text-(length:--fs-body-base) font-bold uppercase tracking-[0.14em] text-(--color-nav-text-on-accent) transition-colors hover:bg-(--color-accent-hover) disabled:cursor-wait disabled:bg-(--color-accent-dim)"
+          className="w-full bg-(--color-accent) px-6 py-2 font-mono text-(length:--fs-body-base) font-bold uppercase tracking-[0.14em] text-(--color-nav-text-on-accent) transition-colors hover:bg-(--color-accent-hover) disabled:cursor-wait disabled:bg-(--color-accent-dim)"
         >
           {submitting ? "creating…" : "join rifthub →"}
         </button>
