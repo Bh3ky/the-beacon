@@ -29,7 +29,6 @@ The African tech ecosystem is growing rapidly, yet discussions are often fragmen
 **2. Backend**
 - Python (FastAPI)
 - Redis
-- Celery
 
 3. Database
 - PostgreSQL
@@ -45,7 +44,7 @@ The African tech ecosystem is growing rapidly, yet discussions are often fragmen
 **Prerequisities**
 
 - Node.js 18+ 
-- Python 3.11+ 
+- Python 3.12+ 
 - uv
 - PostgreSQL
 
