@@ -1,2 +1,6 @@
 [tool.uv.workspace]
 members = ["apps/api", "apps/worker", "packages/backend"]
+
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI's Query/Depends in argument defaults is the intended usage, not a bug.
+extend-immutable-calls = ["fastapi.Query", "fastapi.Depends"]

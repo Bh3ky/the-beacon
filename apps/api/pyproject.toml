@@ -23,6 +23,7 @@ rifthub-api-dev = "rifthub_api.main:run_dev"
 dev = [
     "httpx>=0.28,<1.0",
     "pytest>=8.3,<9.0",
+    "ruff>=0.17.4",
 ]
 
 [tool.hatch.build.targets.wheel]

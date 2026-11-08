@@ -18,6 +18,8 @@
     "db:seed:sources": "uv run --package rifthub-api python scripts/seed-data/seed-approved-sources.py",
     "db:set-role": "uv run --package rifthub-api python scripts/admin/set-user-role.py",
     "db:upgrade": "uv run --package rifthub-api alembic -c apps/api/alembic.ini upgrade head",
-    "db:downgrade": "uv run --package rifthub-api alembic -c apps/api/alembic.ini downgrade -1"
+    "db:downgrade": "uv run --package rifthub-api alembic -c apps/api/alembic.ini downgrade -1",
+    "lint:py": "uv run --package rifthub-api ruff check apps packages scripts",
+    "lint:py:fix": "uv run --package rifthub-api ruff check apps packages scripts --fix"
   }
 }
