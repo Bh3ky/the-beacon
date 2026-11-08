@@ -1,10 +1,19 @@
 from __future__ import annotations
 
+import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
-import uuid
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Index, Text, Uuid, func, text
+from sqlalchemy import (
+    CheckConstraint,
+    DateTime,
+    ForeignKey,
+    Index,
+    Text,
+    Uuid,
+    func,
+    text,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from rifthub_backend.db.base import Base, UUIDPrimaryKeyMixin
@@ -64,11 +73,11 @@ class Flag(UUIDPrimaryKeyMixin, Base):
         server_default=func.now(),
     )
 
-    reporter: Mapped["User"] = relationship(
+    reporter: Mapped[User] = relationship(
         back_populates="reported_flags",
         foreign_keys=[reporter_id],
     )
-    reviewed_by_user: Mapped["User | None"] = relationship(
+    reviewed_by_user: Mapped[User | None] = relationship(
         back_populates="reviewed_flags",
         foreign_keys=[reviewed_by_user_id],
     )

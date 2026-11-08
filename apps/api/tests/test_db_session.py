@@ -1,9 +1,9 @@
 import asyncio
+from typing import Self
 
 import pytest
-
-from rifthub_backend.config import Settings
 import rifthub_backend.db.session as session_module
+from rifthub_backend.config import Settings
 
 
 class DummyEngine:
@@ -283,7 +283,7 @@ def test_ping_database_executes_select_one() -> None:
     executed_statements: list[str] = []
 
     class DummyConnection:
-        async def __aenter__(self) -> "DummyConnection":
+        async def __aenter__(self) -> Self:
             return self
 
         async def __aexit__(self, exc_type, exc, tb) -> None:

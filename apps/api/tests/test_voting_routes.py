@@ -5,17 +5,15 @@ from datetime import UTC, datetime
 from types import SimpleNamespace
 from uuid import uuid4
 
-from fastapi.testclient import TestClient
-
-from rifthub_backend.auth.service import CurrentSession
-from rifthub_backend.config import Settings
-from rifthub_backend.db.types import UserRole, UserStatus
-from rifthub_backend.voting import CommentVoteRead, PostVoteRead, VotingError
-
 import rifthub_api.dependencies as dependencies_module
 import rifthub_api.main as main_module
 import rifthub_api.routes.comments as comments_module
 import rifthub_api.routes.posts as posts_module
+from fastapi.testclient import TestClient
+from rifthub_backend.auth.service import CurrentSession
+from rifthub_backend.config import Settings
+from rifthub_backend.db.types import UserRole, UserStatus
+from rifthub_backend.voting import CommentVoteRead, PostVoteRead, VotingError
 
 
 def make_settings() -> Settings:

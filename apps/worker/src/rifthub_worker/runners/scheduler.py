@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 import asyncio
 import logging
 import math
 import time
 from collections.abc import Awaitable, Callable
+from dataclasses import dataclass
 
 from rifthub_worker.jobs import (
     expire_job_posts_job,
@@ -14,7 +14,11 @@ from rifthub_worker.jobs import (
     refresh_feed_snapshots_job,
     refresh_post_scores_job,
 )
-from rifthub_worker.runners.locks import JobExecutionLockManager, NoopJobExecutionLockManager, build_job_execution_lock_manager
+from rifthub_worker.runners.locks import (
+    JobExecutionLockManager,
+    NoopJobExecutionLockManager,
+    build_job_execution_lock_manager,
+)
 
 logger = logging.getLogger(__name__)
 

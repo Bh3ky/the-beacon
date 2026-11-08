@@ -2,14 +2,12 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 
-from fastapi.testclient import TestClient
-
-from rifthub_backend.config import Settings
-from rifthub_backend.summary import PlatformSummarySnapshot
-
 import rifthub_api.dependencies as dependencies_module
 import rifthub_api.main as main_module
 import rifthub_api.routes.stats as stats_module
+from fastapi.testclient import TestClient
+from rifthub_backend.config import Settings
+from rifthub_backend.summary import PlatformSummarySnapshot
 
 
 def make_settings() -> Settings:

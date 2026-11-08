@@ -5,11 +5,9 @@ from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
-
-from rifthub_backend.db.types import SourceStatus, SourceType
 import rifthub_backend.ingestion_polling as polling_module
+from rifthub_backend.db.types import SourceStatus, SourceType
 from rifthub_backend.ingestion_persistence import PersistIngestionEntriesResult
-from rifthub_backend.ingestion_publication import ProcessIngestionEntriesResult
 from rifthub_backend.ingestion_polling import (
     ParsedFeedEntry,
     ParsedFeedResult,
@@ -20,6 +18,7 @@ from rifthub_backend.ingestion_polling import (
     poll_rss_source,
     source_is_due,
 )
+from rifthub_backend.ingestion_publication import ProcessIngestionEntriesResult
 
 
 def make_source(

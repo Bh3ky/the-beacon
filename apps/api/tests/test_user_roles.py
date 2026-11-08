@@ -3,7 +3,6 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 import pytest
-
 from rifthub_backend.db.types import UserRole
 from rifthub_backend.user_roles import RoleAssignmentError, assign_user_role
 

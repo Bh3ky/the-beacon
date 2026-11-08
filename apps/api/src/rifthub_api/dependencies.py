@@ -1,17 +1,16 @@
 from __future__ import annotations
 
-from collections.abc import AsyncIterator
 import hmac
+from collections.abc import AsyncIterator
 from typing import Annotated
 
 from fastapi import Depends, Request
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from rifthub_backend import get_async_session, get_settings
 from rifthub_backend.auth.security import verify_csrf_token
 from rifthub_backend.auth.service import CurrentSession, resolve_current_session
 from rifthub_backend.config import Settings
 from rifthub_backend.db.types import UserRole
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from .errors import ApiError
 

@@ -4,7 +4,6 @@ from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
 import pytest
-
 from rifthub_backend.db.types import PostType
 from rifthub_backend.job_expiry import (
     JOB_POST_EXPIRY_DAYS,

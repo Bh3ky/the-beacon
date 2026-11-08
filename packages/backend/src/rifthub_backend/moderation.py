@@ -19,6 +19,10 @@ from rifthub_backend.db.types import (
     SourceStatus,
     UserStatus,
 )
+from rifthub_backend.ingestion_publication import (
+    publish_ingestion_item,
+    resolve_or_create_ingestion_system_user,
+)
 from rifthub_backend.models.comment import Comment
 from rifthub_backend.models.flag import Flag
 from rifthub_backend.models.ingestion import IngestionItem
@@ -26,10 +30,6 @@ from rifthub_backend.models.moderation import ModerationAction
 from rifthub_backend.models.post import Post
 from rifthub_backend.models.source import Source
 from rifthub_backend.models.user import User
-from rifthub_backend.ingestion_publication import (
-    publish_ingestion_item,
-    resolve_or_create_ingestion_system_user,
-)
 
 
 @dataclass(slots=True)

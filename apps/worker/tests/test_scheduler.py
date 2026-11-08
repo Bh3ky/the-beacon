@@ -3,8 +3,12 @@ from __future__ import annotations
 import logging
 
 import pytest
-
-from rifthub_worker.runners.scheduler import JobSpec, build_default_job_specs, create_scheduler_state, run_due_jobs
+from rifthub_worker.runners.scheduler import (
+    JobSpec,
+    build_default_job_specs,
+    create_scheduler_state,
+    run_due_jobs,
+)
 
 
 def test_build_default_job_specs_registers_phase_six_jobs() -> None:
@@ -82,7 +86,6 @@ async def test_run_due_jobs_skips_job_when_lock_is_already_held(caplog) -> None:
         async def acquire(self, *, job_name: str, lease_seconds: int):
             assert job_name == "blocked"
             assert lease_seconds == 60
-            return None
 
         async def aclose(self) -> None:
             return None

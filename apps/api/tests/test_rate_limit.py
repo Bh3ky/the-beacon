@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
-import pytest
 from unittest.mock import AsyncMock
 
+import pytest
 import redis.asyncio as redis_asyncio
-
 from rifthub_api.errors import ApiError
-from rifthub_api.rate_limit import ConfigurableRateLimiter, InMemoryRateLimiter, RedisRateLimiter
+from rifthub_api.rate_limit import (
+    ConfigurableRateLimiter,
+    InMemoryRateLimiter,
+    RedisRateLimiter,
+)
 from rifthub_backend.config import Settings
 
 

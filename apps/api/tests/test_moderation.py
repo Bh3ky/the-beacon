@@ -5,8 +5,10 @@ from datetime import UTC, datetime
 from types import SimpleNamespace
 from uuid import uuid4
 
+import rifthub_api.dependencies as dependencies_module
+import rifthub_api.main as main_module
+import rifthub_api.routes.moderation as moderation_module
 from fastapi.testclient import TestClient
-
 from rifthub_backend.auth.service import CurrentSession
 from rifthub_backend.config import Settings
 from rifthub_backend.db.types import (
@@ -19,10 +21,6 @@ from rifthub_backend.db.types import (
     UserStatus,
 )
 from rifthub_backend.moderation import ModerationError
-
-import rifthub_api.dependencies as dependencies_module
-import rifthub_api.main as main_module
-import rifthub_api.routes.moderation as moderation_module
 
 
 def make_settings() -> Settings:

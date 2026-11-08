@@ -1,23 +1,24 @@
 from __future__ import annotations
 
+import logging
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
-import logging
 from time import struct_time
-from typing import Any, Awaitable, Callable, Protocol
+from typing import Any, Protocol
 from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from rifthub_backend.db.types import SourceStatus, SourceType
-from rifthub_backend.ingestion_persistence import persist_discovered_ingestion_entries
-from rifthub_backend.ingestion_publication import process_persisted_ingestion_entries
 from rifthub_backend.ingestion_normalization import (
     normalize_external_published_at,
     normalize_external_url,
     normalize_ingestion_title,
 )
+from rifthub_backend.ingestion_persistence import persist_discovered_ingestion_entries
+from rifthub_backend.ingestion_publication import process_persisted_ingestion_entries
 from rifthub_backend.models.source import Source
 
 logger = logging.getLogger(__name__)
@@ -150,8 +151,10 @@ async def default_fetch_source_content(source: Source) -> SourceFetchResult:
         headers["If-Modified-Since"] = source.last_modified_header
 
     timeout = aiohttp.ClientTimeout(total=RSS_REQUEST_TIMEOUT_SECONDS)
-    async with aiohttp.ClientSession(timeout=timeout, headers=headers) as session:
-        async with session.get(source.url) as response:
+    async with (
+        aiohttp.ClientSession(timeout=timeout, headers=headers) as session,
+        session.get(source.url) as response,
+    ):
             body = None if response.status == 304 else await response.read()
             return SourceFetchResult(
                 status_code=response.status,
@@ -224,7 +227,7 @@ async def poll_rss_source(
 
     try:
         fetched = await fetch_source_content(source)
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 - fetch failures of any kind are recorded on the source; one bad source must not stop the poll
         source.last_error_at = current_time
         source.last_error_message = str(exc)
         await db.commit()
@@ -282,7 +285,7 @@ async def poll_rss_source(
             entries=parsed.entries,
             now=current_time,
         )
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 - persist/publish failures are recorded on the source; one bad source must not stop the poll
         await db.rollback()
         source.last_checked_at = current_time
         source.last_error_at = current_time

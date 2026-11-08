@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-from base64 import urlsafe_b64encode
-from hashlib import pbkdf2_hmac, sha256
 import hmac
 import os
 import re
 import secrets
+from base64 import urlsafe_b64encode
+from hashlib import pbkdf2_hmac, sha256
 from uuid import UUID
-
 
 _PASSWORD_ITERATIONS = 600_000
 _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
@@ -77,7 +76,7 @@ def hash_opaque_token(raw_token: str) -> str:
 
 
 def generate_csrf_token(*, session_id: UUID, session_token_hash: str, secret: str) -> str:
-    payload = f"{session_id}:{session_token_hash}".encode("utf-8")
+    payload = f"{session_id}:{session_token_hash}".encode()
     return hmac.new(secret.encode("utf-8"), payload, sha256).hexdigest()
 
 

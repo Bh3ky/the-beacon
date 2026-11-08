@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-from collections.abc import AsyncIterator
 import logging
+from collections.abc import AsyncIterator
 
 import pytest
-
 import rifthub_worker.jobs.refresh_post_scores as refresh_job_module
 from rifthub_backend.ranking_refresh import PostScoreRefreshResult
 

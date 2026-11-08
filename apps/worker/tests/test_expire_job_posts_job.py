@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-from collections.abc import AsyncIterator
 import logging
+from collections.abc import AsyncIterator
 
 import pytest
-
 import rifthub_worker.jobs.expire_job_posts as expire_job_module
 from rifthub_backend.job_expiry import JobExpiryEnforcementResult
 

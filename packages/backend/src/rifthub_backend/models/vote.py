@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
 import uuid
+from typing import TYPE_CHECKING
 
 from sqlalchemy import CheckConstraint, ForeignKey, Index, SmallInteger
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -27,8 +27,8 @@ class PostVote(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
     vote_value: Mapped[int] = mapped_column(SmallInteger, nullable=False)
 
-    post: Mapped["Post"] = relationship(back_populates="post_votes")
-    user: Mapped["User"] = relationship(back_populates="post_votes")
+    post: Mapped[Post] = relationship(back_populates="post_votes")
+    user: Mapped[User] = relationship(back_populates="post_votes")
 
 
 class CommentVote(UUIDPrimaryKeyMixin, TimestampMixin, Base):
@@ -44,5 +44,5 @@ class CommentVote(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
     vote_value: Mapped[int] = mapped_column(SmallInteger, nullable=False)
 
-    comment: Mapped["Comment"] = relationship(back_populates="comment_votes")
-    user: Mapped["User"] = relationship(back_populates="comment_votes")
+    comment: Mapped[Comment] = relationship(back_populates="comment_votes")
+    user: Mapped[User] = relationship(back_populates="comment_votes")

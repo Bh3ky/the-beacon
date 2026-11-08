@@ -4,6 +4,7 @@ import asyncio
 import logging
 
 from rifthub_backend import configure_logging, get_settings
+
 from rifthub_worker.runners import (
     build_default_job_specs,
     build_job_execution_lock_manager,

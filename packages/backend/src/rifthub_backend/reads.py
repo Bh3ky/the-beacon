@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import base64
+import json
 from dataclasses import dataclass
 from datetime import UTC, datetime
-import json
 from typing import Literal
 from uuid import UUID
 
@@ -11,13 +11,18 @@ from sqlalchemy import Select, and_, desc, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
-from rifthub_backend.db.types import Category, CommentStatus, PostStatus, PostType, UserRole
+from rifthub_backend.db.types import (
+    Category,
+    CommentStatus,
+    PostStatus,
+    PostType,
+    UserRole,
+)
 from rifthub_backend.models.comment import Comment
 from rifthub_backend.models.domain import Domain
 from rifthub_backend.models.post import Post
 from rifthub_backend.models.user import User
 from rifthub_backend.models.vote import CommentVote, PostVote
-
 
 CommentSort = Literal["top", "new", "old"]
 FeedKind = Literal["top", "new", "jobs", "ask", "show"]

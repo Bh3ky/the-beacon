@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from datetime import UTC, datetime
-import re
 from typing import Final
 from uuid import UUID
 
@@ -11,7 +11,12 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
-from rifthub_backend.db.types import Category, CommentStatus, PostStatus, PostType, UserRole
+from rifthub_backend.db.types import (
+    Category,
+    CommentStatus,
+    PostStatus,
+    PostType,
+)
 from rifthub_backend.domains import resolve_or_create_domain
 from rifthub_backend.ingestion_normalization import (
     hostname_from_normalized_url,
@@ -19,9 +24,15 @@ from rifthub_backend.ingestion_normalization import (
 )
 from rifthub_backend.job_expiry import normalize_new_job_expiry
 from rifthub_backend.models.comment import Comment
+from rifthub_backend.models.domain import Domain
 from rifthub_backend.models.post import Post
 from rifthub_backend.models.user import User
-from rifthub_backend.reads import CommentRead, PostRead, get_comment_detail, get_post_detail
+from rifthub_backend.reads import (
+    CommentRead,
+    PostRead,
+    get_comment_detail,
+    get_post_detail,
+)
 from rifthub_backend.voting import compute_comment_rank_score, compute_post_rank_score
 from rifthub_backend.write_access import user_has_restricted_write_access
 

@@ -6,7 +6,6 @@ from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
-
 from rifthub_backend.db.types import Category
 from rifthub_backend.reconciliation import reconcile_vote_counts
 

@@ -1,13 +1,17 @@
 from uuid import uuid4
 
 import pytest
-from sqlalchemy import select
-from sqlalchemy.dialects import postgresql
-
 import rifthub_backend.reads as reads_module
 from rifthub_backend.db.types import UserRole
 from rifthub_backend.models.post import Post
-from rifthub_backend.reads import ReadError, _apply_feed_cursor, decode_feed_cursor, encode_feed_cursor
+from rifthub_backend.reads import (
+    ReadError,
+    _apply_feed_cursor,
+    decode_feed_cursor,
+    encode_feed_cursor,
+)
+from sqlalchemy import select
+from sqlalchemy.dialects import postgresql
 
 
 def test_feed_cursor_round_trip_for_top_feed() -> None:

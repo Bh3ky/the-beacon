@@ -4,11 +4,15 @@ from uuid import UUID
 
 from fastapi import APIRouter, Request, status
 from pydantic import BaseModel
-
 from rifthub_backend.db.types import FlagReason, FlagTargetType
 from rifthub_backend.flags import CreateFlagInput, create_flag
 
-from rifthub_api.dependencies import AppSettings, DbSession, RequiredCurrentSession, validate_session_csrf
+from rifthub_api.dependencies import (
+    AppSettings,
+    DbSession,
+    RequiredCurrentSession,
+    validate_session_csrf,
+)
 from rifthub_api.schemas import FlagResponse
 
 router = APIRouter(prefix="/flags", tags=["flags"])

@@ -3,13 +3,19 @@ from __future__ import annotations
 import logging
 
 from rifthub_backend import get_async_session, get_settings
-from rifthub_backend.ingestion_polling import SOURCE_POLL_LOCK_PREFIX, poll_due_rss_sources
+from rifthub_backend.ingestion_polling import (
+    SOURCE_POLL_LOCK_PREFIX,
+    poll_due_rss_sources,
+)
 
 logger = logging.getLogger(__name__)
 
 
 def build_source_poll_lock_manager():
-    from rifthub_worker.runners.locks import NoopJobExecutionLockManager, RedisJobExecutionLockManager
+    from rifthub_worker.runners.locks import (
+        NoopJobExecutionLockManager,
+        RedisJobExecutionLockManager,
+    )
 
     settings = get_settings()
     if settings.redis_url:

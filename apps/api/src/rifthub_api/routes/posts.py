@@ -7,7 +7,6 @@ from uuid import UUID
 from fastapi import APIRouter, Query, Request, status
 from pydantic import BaseModel, model_validator
 from pydantic_core import PydanticCustomError
-
 from rifthub_backend.creation import (
     CreateCommentInput,
     CreatePostInput,
@@ -19,8 +18,19 @@ from rifthub_backend.job_expiry import normalize_new_job_expiry
 from rifthub_backend.reads import CommentSort, get_post_comments, get_post_detail
 from rifthub_backend.voting import remove_post_vote, vote_on_post
 
-from rifthub_api.dependencies import AppSettings, CurrentSessionDep, DbSession, RequiredCurrentSession, validate_session_csrf
-from rifthub_api.schemas import CommentListResponse, CommentResponse, PostResponse, PostVoteResponse
+from rifthub_api.dependencies import (
+    AppSettings,
+    CurrentSessionDep,
+    DbSession,
+    RequiredCurrentSession,
+    validate_session_csrf,
+)
+from rifthub_api.schemas import (
+    CommentListResponse,
+    CommentResponse,
+    PostResponse,
+    PostVoteResponse,
+)
 
 router = APIRouter(prefix="/posts", tags=["posts"])
 

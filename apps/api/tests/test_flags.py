@@ -5,16 +5,20 @@ from datetime import UTC, datetime
 from types import SimpleNamespace
 from uuid import uuid4
 
-from fastapi.testclient import TestClient
-
-from rifthub_backend.auth.service import CurrentSession
-from rifthub_backend.config import Settings
-from rifthub_backend.db.types import FlagReason, FlagStatus, FlagTargetType, UserRole, UserStatus
-from rifthub_backend.flags import FlaggingError
-
 import rifthub_api.dependencies as dependencies_module
 import rifthub_api.main as main_module
 import rifthub_api.routes.flags as flags_module
+from fastapi.testclient import TestClient
+from rifthub_backend.auth.service import CurrentSession
+from rifthub_backend.config import Settings
+from rifthub_backend.db.types import (
+    FlagReason,
+    FlagStatus,
+    FlagTargetType,
+    UserRole,
+    UserStatus,
+)
+from rifthub_backend.flags import FlaggingError
 
 
 def make_settings() -> Settings:

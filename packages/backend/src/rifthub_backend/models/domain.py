@@ -3,9 +3,17 @@ from __future__ import annotations
 from datetime import datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING
-import uuid
 
-from sqlalchemy import Boolean, CheckConstraint, DateTime, Index, Integer, Numeric, String, text
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    DateTime,
+    Index,
+    Integer,
+    Numeric,
+    String,
+    text,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from rifthub_backend.db.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
@@ -53,5 +61,5 @@ class Domain(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
     last_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
-    posts: Mapped[list["Post"]] = relationship(back_populates="domain")
-    sources: Mapped[list["Source"]] = relationship(back_populates="domain")
+    posts: Mapped[list[Post]] = relationship(back_populates="domain")
+    sources: Mapped[list[Source]] = relationship(back_populates="domain")

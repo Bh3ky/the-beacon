@@ -1,12 +1,18 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from rifthub_backend.db.types import Category, CommentStatus, PostStatus, PostType, UserStatus
+from rifthub_backend.db.types import (
+    Category,
+    CommentStatus,
+    PostStatus,
+    PostType,
+    UserStatus,
+)
 from rifthub_backend.models.comment import Comment
 from rifthub_backend.models.post import Post
 from rifthub_backend.models.user import User
@@ -27,7 +33,7 @@ class PlatformSummarySnapshot:
 
 
 async def get_platform_summary(db: AsyncSession) -> PlatformSummarySnapshot:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     previous_month_end = month_start
     previous_month_start = (month_start - timedelta(microseconds=1)).replace(

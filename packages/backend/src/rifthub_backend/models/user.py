@@ -2,13 +2,17 @@ from __future__ import annotations
 
 from datetime import datetime
 from typing import TYPE_CHECKING
-import uuid
 
 from sqlalchemy import CheckConstraint, DateTime, Index, Integer, String, Text, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from rifthub_backend.db.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
-from rifthub_backend.db.types import USER_ROLE_ENUM, USER_STATUS_ENUM, UserRole, UserStatus
+from rifthub_backend.db.types import (
+    USER_ROLE_ENUM,
+    USER_STATUS_ENUM,
+    UserRole,
+    UserStatus,
+)
 
 if TYPE_CHECKING:
     from .comment import Comment
@@ -54,22 +58,22 @@ class User(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     avatar_url: Mapped[str | None] = mapped_column(Text)
     last_active_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
-    posts: Mapped[list["Post"]] = relationship(back_populates="author")
-    comments: Mapped[list["Comment"]] = relationship(back_populates="author")
-    post_votes: Mapped[list["PostVote"]] = relationship(back_populates="user")
-    comment_votes: Mapped[list["CommentVote"]] = relationship(back_populates="user")
-    reported_flags: Mapped[list["Flag"]] = relationship(
+    posts: Mapped[list[Post]] = relationship(back_populates="author")
+    comments: Mapped[list[Comment]] = relationship(back_populates="author")
+    post_votes: Mapped[list[PostVote]] = relationship(back_populates="user")
+    comment_votes: Mapped[list[CommentVote]] = relationship(back_populates="user")
+    reported_flags: Mapped[list[Flag]] = relationship(
         back_populates="reporter",
         foreign_keys="Flag.reporter_id",
     )
-    reviewed_flags: Mapped[list["Flag"]] = relationship(
+    reviewed_flags: Mapped[list[Flag]] = relationship(
         back_populates="reviewed_by_user",
         foreign_keys="Flag.reviewed_by_user_id",
     )
-    moderation_actions: Mapped[list["ModerationAction"]] = relationship(
+    moderation_actions: Mapped[list[ModerationAction]] = relationship(
         back_populates="moderator",
     )
-    sessions: Mapped[list["UserSession"]] = relationship(back_populates="user")
-    verification_tokens: Mapped[list["UserVerificationToken"]] = relationship(
+    sessions: Mapped[list[UserSession]] = relationship(back_populates="user")
+    verification_tokens: Mapped[list[UserVerificationToken]] = relationship(
         back_populates="user"
     )

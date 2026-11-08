@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
 import re
+from datetime import UTC, datetime
 from urllib.parse import SplitResult, parse_qsl, urlencode, urlsplit, urlunsplit
 
 TRACKING_QUERY_PARAM_PREFIXES = ("utm_", "mc_")

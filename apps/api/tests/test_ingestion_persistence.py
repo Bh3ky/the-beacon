@@ -5,7 +5,6 @@ from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
-
 from rifthub_backend.db.types import IngestionStatus, PostStatus
 from rifthub_backend.ingestion_persistence import persist_discovered_ingestion_entries
 
@@ -93,7 +92,7 @@ async def test_persist_discovered_ingestion_entries_preserves_published_item_sta
             self.scalar_calls = 0
 
         async def scalars(self, _statement: object):
-            return SimpleNamespace(all=lambda: [])
+            return SimpleNamespace(all=list)
 
         async def scalar(self, _statement: object):
             self.scalar_calls += 1
@@ -137,7 +136,7 @@ async def test_persist_discovered_ingestion_entries_uses_url_fallback_when_exter
             self.scalar_calls = 0
 
         async def scalars(self, _statement: object):
-            return SimpleNamespace(all=lambda: [])
+            return SimpleNamespace(all=list)
 
         async def scalar(self, _statement: object):
             self.scalar_calls += 1

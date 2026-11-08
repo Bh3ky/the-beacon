@@ -2,13 +2,12 @@ from __future__ import annotations
 
 from logging.config import fileConfig
 
-from alembic import context
-from sqlalchemy import pool
-from sqlalchemy.ext.asyncio import async_engine_from_config
-
 import rifthub_backend.models  # noqa: F401
+from alembic import context
 from rifthub_backend import get_settings
 from rifthub_backend.db.base import Base
+from sqlalchemy import pool
+from sqlalchemy.ext.asyncio import async_engine_from_config
 
 config = context.config
 

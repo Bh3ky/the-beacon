@@ -5,7 +5,6 @@ from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
-
 import rifthub_backend.feed_snapshots as feed_snapshot_module
 
 

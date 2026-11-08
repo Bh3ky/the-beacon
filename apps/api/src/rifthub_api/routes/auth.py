@@ -1,21 +1,22 @@
 from __future__ import annotations
 
-from datetime import datetime
 import ipaddress
+from datetime import datetime
+from typing import Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Request, Response, status
 from pydantic import BaseModel, ConfigDict
-from typing import Literal
-
 from rifthub_backend.auth.security import canonicalize_email
 from rifthub_backend.auth.service import (
     SessionAuthResult,
     login_user,
     logout_session,
     register_user,
-    resend_verification as resend_verification_email,
     verify_account,
+)
+from rifthub_backend.auth.service import (
+    resend_verification as resend_verification_email,
 )
 from rifthub_backend.config import Settings
 from rifthub_backend.db.types import UserRole, UserStatus

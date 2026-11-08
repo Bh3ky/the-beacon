@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import pytest
-
 from rifthub_worker.runners.locks import (
     DEFAULT_WORKER_LOCK_PREFIX,
     NoopJobExecutionLockManager,

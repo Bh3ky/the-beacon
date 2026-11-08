@@ -3,9 +3,14 @@ from __future__ import annotations
 from uuid import UUID
 
 from fastapi import APIRouter, Query
-
 from rifthub_backend.db.types import UserRole
-from rifthub_backend.reads import get_ask_feed, get_jobs_feed, get_new_feed, get_show_feed, get_top_feed
+from rifthub_backend.reads import (
+    get_ask_feed,
+    get_jobs_feed,
+    get_new_feed,
+    get_show_feed,
+    get_top_feed,
+)
 
 from rifthub_api.dependencies import CurrentSessionDep, DbSession
 from rifthub_api.schemas import FeedResponse

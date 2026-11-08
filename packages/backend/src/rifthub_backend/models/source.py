@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+import uuid
 from datetime import datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING
-import uuid
 
 from sqlalchemy import (
     Boolean,
@@ -13,15 +13,21 @@ from sqlalchemy import (
     Index,
     Integer,
     Numeric,
-    Text,
     String,
+    Text,
     text,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from rifthub_backend.db.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
-from rifthub_backend.db.types import CATEGORY_ENUM, SOURCE_STATUS_ENUM, SOURCE_TYPE_ENUM
-from rifthub_backend.db.types import Category, SourceStatus, SourceType
+from rifthub_backend.db.types import (
+    CATEGORY_ENUM,
+    SOURCE_STATUS_ENUM,
+    SOURCE_TYPE_ENUM,
+    Category,
+    SourceStatus,
+    SourceType,
+)
 
 if TYPE_CHECKING:
     from .domain import Domain
@@ -77,6 +83,6 @@ class Source(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     last_error_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     last_error_message: Mapped[str | None] = mapped_column(Text)
 
-    domain: Mapped["Domain | None"] = relationship(back_populates="sources")
-    posts: Mapped[list["Post"]] = relationship(back_populates="ingested_from_source")
-    ingestion_items: Mapped[list["IngestionItem"]] = relationship(back_populates="source")
+    domain: Mapped[Domain | None] = relationship(back_populates="sources")
+    posts: Mapped[list[Post]] = relationship(back_populates="ingested_from_source")
+    ingestion_items: Mapped[list[IngestionItem]] = relationship(back_populates="source")

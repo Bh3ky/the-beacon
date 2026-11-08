@@ -5,7 +5,6 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
 import pytest
-
 import rifthub_backend.auth.service as service_module
 from rifthub_backend.auth.delivery import VerificationDeliveryResult
 from rifthub_backend.config import Settings

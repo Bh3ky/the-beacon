@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from typing import TYPE_CHECKING
 import uuid
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     Boolean,
@@ -12,15 +12,21 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
-    Text,
     String,
+    Text,
     text,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from rifthub_backend.db.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
-from rifthub_backend.db.types import CATEGORY_ENUM, POST_STATUS_ENUM, POST_TYPE_ENUM
-from rifthub_backend.db.types import Category, PostStatus, PostType
+from rifthub_backend.db.types import (
+    CATEGORY_ENUM,
+    POST_STATUS_ENUM,
+    POST_TYPE_ENUM,
+    Category,
+    PostStatus,
+    PostType,
+)
 
 if TYPE_CHECKING:
     from .comment import Comment
@@ -133,21 +139,21 @@ class Post(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     submitted_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
     last_commented_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     job_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
-    author: Mapped["User"] = relationship(back_populates="posts")
-    domain: Mapped["Domain | None"] = relationship(back_populates="posts")
-    ingested_from_source: Mapped["Source | None"] = relationship(back_populates="posts")
-    comments: Mapped[list["Comment"]] = relationship(back_populates="post")
-    post_votes: Mapped[list["PostVote"]] = relationship(back_populates="post")
-    linked_ingestion_items: Mapped[list["IngestionItem"]] = relationship(
+    author: Mapped[User] = relationship(back_populates="posts")
+    domain: Mapped[Domain | None] = relationship(back_populates="posts")
+    ingested_from_source: Mapped[Source | None] = relationship(back_populates="posts")
+    comments: Mapped[list[Comment]] = relationship(back_populates="post")
+    post_votes: Mapped[list[PostVote]] = relationship(back_populates="post")
+    linked_ingestion_items: Mapped[list[IngestionItem]] = relationship(
         back_populates="linked_post",
         foreign_keys="IngestionItem.linked_post_id",
     )
-    dedupe_ingestion_items: Mapped[list["IngestionItem"]] = relationship(
+    dedupe_ingestion_items: Mapped[list[IngestionItem]] = relationship(
         back_populates="dedupe_match_post",
         foreign_keys="IngestionItem.dedupe_match_post_id",
     )

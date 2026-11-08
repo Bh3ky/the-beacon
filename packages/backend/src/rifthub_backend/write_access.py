@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from rifthub_backend.db.types import UserStatus
 
-
 WRITE_RESTRICTED_STATUSES = frozenset({UserStatus.SUSPENDED, UserStatus.BANNED})
 
 

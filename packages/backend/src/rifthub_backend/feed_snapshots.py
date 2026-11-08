@@ -6,7 +6,13 @@ from typing import Literal
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from rifthub_backend.reads import get_ask_feed, get_jobs_feed, get_new_feed, get_show_feed, get_top_feed
+from rifthub_backend.reads import (
+    get_ask_feed,
+    get_jobs_feed,
+    get_new_feed,
+    get_show_feed,
+    get_top_feed,
+)
 
 FeedSnapshotKind = Literal["top", "new", "ask", "show", "jobs"]
 

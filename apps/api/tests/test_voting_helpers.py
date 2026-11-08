@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-from decimal import Decimal
 from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
-
 import rifthub_backend.voting as voting_module
 from rifthub_backend.db.types import Category, UserStatus
 from rifthub_backend.voting import (

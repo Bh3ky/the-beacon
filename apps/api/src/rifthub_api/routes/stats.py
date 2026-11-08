@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from fastapi import APIRouter
-
 from rifthub_backend.summary import get_platform_summary
 
 from rifthub_api.dependencies import DbSession

@@ -7,7 +7,6 @@ from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
-
 import rifthub_backend.ingestion_sources as ingestion_sources_module
 from rifthub_backend.db.types import Category, SourceStatus, SourceType
 from rifthub_backend.ingestion_normalization import (

@@ -5,10 +5,9 @@ from decimal import Decimal
 from types import SimpleNamespace
 
 import pytest
-from sqlalchemy.dialects import postgresql
-
 from rifthub_backend.db.types import Category
 from rifthub_backend.ranking_refresh import refresh_post_rank_scores
+from sqlalchemy.dialects import postgresql
 
 
 class FakeScalarResult:

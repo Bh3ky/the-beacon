@@ -1,12 +1,10 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from decimal import Decimal
 from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
-
 from rifthub_backend.db.types import Category, IngestionStatus
 from rifthub_backend.ingestion_publication import (
     ProcessIngestionEntriesResult,

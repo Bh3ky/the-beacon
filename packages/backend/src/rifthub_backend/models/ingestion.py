@@ -1,15 +1,20 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from typing import TYPE_CHECKING
 import uuid
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime, ForeignKey, Index, String, Text, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from rifthub_backend.db.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
-from rifthub_backend.db.types import CATEGORY_ENUM, INGESTION_STATUS_ENUM, Category, IngestionStatus
+from rifthub_backend.db.types import (
+    CATEGORY_ENUM,
+    INGESTION_STATUS_ENUM,
+    Category,
+    IngestionStatus,
+)
 
 if TYPE_CHECKING:
     from .post import Post
@@ -49,7 +54,7 @@ class IngestionItem(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     discovered_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
     ingestion_status: Mapped[IngestionStatus] = mapped_column(
         INGESTION_STATUS_ENUM,
@@ -63,12 +68,12 @@ class IngestionItem(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     raw_payload_json: Mapped[dict[str, object] | None] = mapped_column(JSONB)
     processing_notes: Mapped[str | None] = mapped_column(Text)
 
-    source: Mapped["Source"] = relationship(back_populates="ingestion_items")
-    linked_post: Mapped["Post | None"] = relationship(
+    source: Mapped[Source] = relationship(back_populates="ingestion_items")
+    linked_post: Mapped[Post | None] = relationship(
         back_populates="linked_ingestion_items",
         foreign_keys=[linked_post_id],
     )
-    dedupe_match_post: Mapped["Post | None"] = relationship(
+    dedupe_match_post: Mapped[Post | None] = relationship(
         back_populates="dedupe_ingestion_items",
         foreign_keys=[dedupe_match_post_id],
     )

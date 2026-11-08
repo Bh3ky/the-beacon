@@ -3,8 +3,6 @@ from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
-from sqlalchemy.exc import IntegrityError
-
 import rifthub_backend.creation as creation_module
 from rifthub_backend.creation import (
     ACTIVE_LINK_URL_CONSTRAINT_NAME,
@@ -18,6 +16,7 @@ from rifthub_backend.creation import (
 )
 from rifthub_backend.db.types import Category, PostType, UserRole, UserStatus
 from rifthub_backend.voting import compute_post_rank_score
+from sqlalchemy.exc import IntegrityError
 
 
 def test_slugify_title_normalizes_and_truncates() -> None:

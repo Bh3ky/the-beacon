@@ -7,19 +7,25 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
-from sqlalchemy import delete, func, select
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from rifthub_backend import dispose_engine
 from rifthub_backend.creation import hostname_from_url, normalize_url, slugify_title
 from rifthub_backend.db.session import get_session_factory
-from rifthub_backend.db.types import Category, CommentStatus, PostStatus, PostType, UserRole, UserStatus
+from rifthub_backend.db.types import (
+    Category,
+    CommentStatus,
+    PostStatus,
+    PostType,
+    UserRole,
+    UserStatus,
+)
 from rifthub_backend.models.comment import Comment
 from rifthub_backend.models.domain import Domain
 from rifthub_backend.models.post import Post
 from rifthub_backend.models.user import User
 from rifthub_backend.models.vote import CommentVote, PostVote
 from rifthub_backend.voting import compute_post_rank_score
+from sqlalchemy import delete, func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 FIXTURE_PATH = Path(__file__).with_name("dev_feed_posts.json")
 SEED_EMAIL_DOMAIN = "seed.rifthub.dev"
@@ -108,7 +114,7 @@ class FeedSeedFixture:
     post_type: PostType
     body_markdown: str | None
     job_expires_in_days: int | None
-    threaded_comments: tuple["SeedCommentFixture", ...]
+    threaded_comments: tuple[SeedCommentFixture, ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -117,7 +123,7 @@ class SeedCommentFixture:
     body_markdown: str
     score: int
     minutes_after_post: int
-    replies: tuple["SeedCommentFixture", ...]
+    replies: tuple[SeedCommentFixture, ...]
 
 
 def parse_threaded_comments(items: list[dict[str, Any]] | None) -> tuple[SeedCommentFixture, ...]:

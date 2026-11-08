@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-from contextlib import asynccontextmanager
 import logging
+from contextlib import asynccontextmanager
 
+import uvicorn
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
-import uvicorn
-
 from rifthub_backend import (
     configure_logging,
     dispose_engine,
@@ -14,6 +13,12 @@ from rifthub_backend import (
     get_settings,
     ping_database,
 )
+from rifthub_backend.auth.service import AuthError
+from rifthub_backend.creation import CreationError
+from rifthub_backend.flags import FlaggingError
+from rifthub_backend.moderation import ModerationError
+from rifthub_backend.reads import ReadError
+from rifthub_backend.voting import VotingError
 
 from rifthub_api.errors import (
     ApiError,
@@ -37,12 +42,6 @@ from rifthub_api.routes import (
     posts_router,
     stats_router,
 )
-from rifthub_backend.auth.service import AuthError
-from rifthub_backend.creation import CreationError
-from rifthub_backend.flags import FlaggingError
-from rifthub_backend.moderation import ModerationError
-from rifthub_backend.reads import ReadError
-from rifthub_backend.voting import VotingError
 
 logger = logging.getLogger(__name__)
 

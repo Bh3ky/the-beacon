@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
-import json
 from pathlib import Path
 from typing import Any
 
@@ -11,7 +11,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from rifthub_backend.db.types import Category, SourceStatus, SourceType
 from rifthub_backend.domains import resolve_or_create_domain
-from rifthub_backend.ingestion_normalization import hostname_from_normalized_url, normalize_external_url
+from rifthub_backend.ingestion_normalization import (
+    hostname_from_normalized_url,
+    normalize_external_url,
+)
 from rifthub_backend.models.source import Source
 
 _CATEGORY_ALIASES = {

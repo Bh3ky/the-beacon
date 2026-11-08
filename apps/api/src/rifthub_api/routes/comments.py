@@ -5,10 +5,14 @@ from uuid import UUID
 
 from fastapi import APIRouter, Request
 from pydantic import BaseModel
-
 from rifthub_backend.voting import remove_comment_vote, vote_on_comment
 
-from rifthub_api.dependencies import AppSettings, DbSession, RequiredCurrentSession, validate_session_csrf
+from rifthub_api.dependencies import (
+    AppSettings,
+    DbSession,
+    RequiredCurrentSession,
+    validate_session_csrf,
+)
 from rifthub_api.schemas import CommentVoteResponse
 
 router = APIRouter(prefix="/comments", tags=["comments"])

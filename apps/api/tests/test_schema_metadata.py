@@ -1,11 +1,10 @@
+import rifthub_backend.models  # noqa: F401
+from rifthub_backend.db.base import Base
+from rifthub_backend.db.types import ALL_ENUM_TYPES, UserStatus
 from sqlalchemy import ForeignKeyConstraint, UniqueConstraint
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import configure_mappers
 from sqlalchemy.schema import CreateIndex, CreateTable
-
-import rifthub_backend.models  # noqa: F401
-from rifthub_backend.db.base import Base
-from rifthub_backend.db.types import ALL_ENUM_TYPES, UserStatus
 
 
 def test_metadata_contains_phase_two_tables() -> None:

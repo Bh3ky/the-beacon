@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import asyncio
-from dataclasses import dataclass
-from datetime import datetime
-from email.message import EmailMessage
 import json
 import logging
 import smtplib
+from dataclasses import dataclass
+from datetime import datetime
+from email.message import EmailMessage
 from typing import Protocol
 from urllib import error as urllib_error
 from urllib import request as urllib_request

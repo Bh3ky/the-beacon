@@ -14,9 +14,9 @@ from .security import (
 )
 
 __all__ = [
+    "build_verification_url",
     "canonicalize_email",
     "canonicalize_username",
-    "build_verification_url",
     "generate_csrf_token",
     "generate_opaque_token",
     "get_verification_delivery",

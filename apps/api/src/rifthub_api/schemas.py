@@ -5,7 +5,6 @@ from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
-
 from rifthub_backend.db.types import (
     CommentStatus,
     FlagReason,

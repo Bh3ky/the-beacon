@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-from collections.abc import AsyncIterator
 import logging
+from collections.abc import AsyncIterator
 
 import pytest
-
 import rifthub_worker.jobs.reconcile_vote_counts as reconcile_job_module
 from rifthub_backend.reconciliation import VoteReconciliationResult
 

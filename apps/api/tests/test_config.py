@@ -1,7 +1,5 @@
 import pytest
-
 import rifthub_backend.config as config_module
-
 from rifthub_backend.config import ConfigError, get_settings
 
 
@@ -162,7 +160,7 @@ def test_settings_load_repo_root_dotenv(monkeypatch, tmp_path) -> None:
     monkeypatch.delenv("RIFTHUB_SQL_ECHO", raising=False)
 
     (tmp_path / ".env").write_text(
-        "\n".join(
+        "\n".join(  # noqa: FLY002 - a list is easier to read than one long f-string
             [
                 "RIFTHUB_DATABASE_URL=postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/from_dotenv",
                 "RIFTHUB_MIGRATION_DATABASE_URL=postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/from_dotenv_migration",

@@ -6,7 +6,10 @@ from pathlib import Path
 
 from rifthub_backend import dispose_engine
 from rifthub_backend.db.session import get_session_factory
-from rifthub_backend.ingestion_sources import import_approved_sources, load_approved_sources
+from rifthub_backend.ingestion_sources import (
+    import_approved_sources,
+    load_approved_sources,
+)
 
 DEFAULT_SOURCE_FILE = Path(__file__).with_name("approved_sources.dev.json")
 

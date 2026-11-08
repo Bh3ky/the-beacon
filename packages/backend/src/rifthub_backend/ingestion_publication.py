@@ -11,7 +11,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from rifthub_backend.auth.security import canonicalize_email, canonicalize_username
 from rifthub_backend.config import get_settings
 from rifthub_backend.creation import ACTIVE_LINK_URL_CONSTRAINT_NAME, slugify_title
-from rifthub_backend.db.types import Category, IngestionStatus, PostStatus, PostType, UserRole, UserStatus
+from rifthub_backend.db.types import (
+    Category,
+    IngestionStatus,
+    PostStatus,
+    PostType,
+    UserRole,
+    UserStatus,
+)
 from rifthub_backend.domains import resolve_or_create_domain
 from rifthub_backend.ingestion_normalization import hostname_from_normalized_url
 from rifthub_backend.models.ingestion import IngestionItem
