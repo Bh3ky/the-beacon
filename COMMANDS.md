@@ -37,7 +37,7 @@ Rate-limiting env note:
 
 - local development can keep `RIFTHUB_RATE_LIMIT_BACKEND=memory`
 - non-development environments should use `RIFTHUB_RATE_LIMIT_BACKEND=redis` with `RIFTHUB_REDIS_URL` set
-- if the API is behind a trusted reverse proxy, set `RIFTHUB_TRUSTED_PROXY_IPS` so forwarded client IPs are trusted deliberately
+- the web proxy and the API must share `RIFTHUB_PROXY_SECRET` (any long random string; required outside development) so the API can trust the forwarded client IP
 - for local worker/feed-snapshot review, set `RIFTHUB_REDIS_URL=redis://127.0.0.1:6379/0`
 
 ## Run The Apps

@@ -116,8 +116,7 @@ def _run_server(*, reload: bool) -> None:
         "rifthub_api.main:app",
         host=settings.api_host,
         port=settings.api_port,
-        proxy_headers=bool(settings.trusted_proxy_ips),
-        forwarded_allow_ips=",".join(settings.trusted_proxy_ips),
+        proxy_headers=False,
         reload=reload,
     )
 

@@ -101,7 +101,7 @@ class Settings:
     rate_limit_backend: str = "memory"
     redis_url: str = ""
     rate_limit_prefix: str = "rifthub:rate-limit"
-    trusted_proxy_ips: tuple[str, ...] = ("127.0.0.1", "::1")
+    proxy_secret: str = ""
     ingestion_system_username: str = "rifthub_bot"
     ingestion_system_email: str = "ingestion-bot@localhost"
 
@@ -117,7 +117,10 @@ def get_settings() -> Settings:
         "RIFTHUB_RATE_LIMIT_BACKEND",
         default_rate_limit_backend,
     ).strip().lower()
-    default_trusted_proxy_ips = ("127.0.0.1", "::1") if environment in {"development", "test"} else ()
+    proxy_secret = os.getenv("RIFTHUB_PROXY_SECRET", "").strip()
+    if environment not in {"development", "test"} and not proxy_secret:
+        # without it the API cannot tell real users apart behind the web proxy.
+        raise ConfigError("Missing required environment variable: RIFTHUB_PROXY_SECRET")
 
     if rate_limit_backend == "redis" and not redis_url:
         raise ConfigError("Missing required environment variable: RIFTHUB_REDIS_URL")
@@ -158,10 +161,7 @@ def get_settings() -> Settings:
         redis_url=redis_url,
         rate_limit_prefix=os.getenv("RIFTHUB_RATE_LIMIT_PREFIX", "rifthub:rate-limit").strip()
         or "rifthub:rate-limit",
-        trusted_proxy_ips=_env_csv(
-            "RIFTHUB_TRUSTED_PROXY_IPS",
-            default_trusted_proxy_ips,
-        ),
+        proxy_secret=proxy_secret,
         ingestion_system_username=os.getenv("RIFTHUB_INGESTION_SYSTEM_USERNAME", "rifthub_bot").strip()
         or "rifthub_bot",
         ingestion_system_email=os.getenv("RIFTHUB_INGESTION_SYSTEM_EMAIL", "ingestion-bot@localhost").strip()

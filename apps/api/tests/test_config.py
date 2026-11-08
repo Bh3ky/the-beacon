@@ -130,7 +130,7 @@ def test_settings_apply_default_non_database_values(monkeypatch) -> None:
     assert settings.rate_limit_backend == "memory"
     assert settings.redis_url == ""
     assert settings.rate_limit_prefix == "rifthub:rate-limit"
-    assert settings.trusted_proxy_ips == ("127.0.0.1", "::1")
+    assert settings.proxy_secret == ""
 
 
 def test_settings_require_redis_url_when_redis_rate_limiter_is_enabled(monkeypatch) -> None:
@@ -141,6 +141,7 @@ def test_settings_require_redis_url_when_redis_rate_limiter_is_enabled(monkeypat
         "postgresql+asyncpg://user:pass@127.0.0.1:5432/rifthub_test",
     )
     monkeypatch.setenv("RIFTHUB_ENV", "production")
+    monkeypatch.setenv("RIFTHUB_PROXY_SECRET", "x")
     monkeypatch.delenv("RIFTHUB_REDIS_URL", raising=False)
     monkeypatch.delenv("RIFTHUB_RATE_LIMIT_BACKEND", raising=False)
 

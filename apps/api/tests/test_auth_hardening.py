@@ -245,26 +245,41 @@ def make_request(*, client_host: str, headers: dict[str, str] | None = None) -> 
     return Request(scope)
 
 
-def test_client_ip_prefers_forwarded_for_from_trusted_proxy() -> None:
-    settings = make_settings()
+def _settings_with_secret(secret: str) -> Settings:
+    return Settings(**{**make_settings().__dict__, "proxy_secret": secret})
+
+
+def test_client_ip_uses_forwarded_ip_when_proxy_secret_matches() -> None:
     request = make_request(
-        client_host="127.0.0.1",
-        headers={"x-forwarded-for": "203.0.113.9, 127.0.0.1"},
+        client_host="10.0.0.5",
+        headers={"x-forwarded-for": "203.0.113.9", "x-proxy-secret": "s3cret"},
     )
+    assert auth_module._client_ip(request, _settings_with_secret("s3cret")) == "203.0.113.9"
 
-    assert auth_module._client_ip(request, settings) == "203.0.113.9"
+
+def test_client_ip_ignores_forwarded_ip_without_secret() -> None:
+    request = make_request(client_host="10.0.0.5", headers={"x-forwarded-for": "203.0.113.9"})
+    assert auth_module._client_ip(request, _settings_with_secret("s3cret")) == "10.0.0.5"
 
 
-def test_client_ip_ignores_forwarded_for_from_untrusted_proxy() -> None:
-    settings = Settings(
-        **{
-            **make_settings().__dict__,
-            "trusted_proxy_ips": (),
-        }
-    )
+def test_client_ip_ignores_forwarded_ip_with_wrong_secret() -> None:
     request = make_request(
-        client_host="198.51.100.20",
-        headers={"x-forwarded-for": "203.0.113.9"},
+        client_host="10.0.0.5",
+        headers={"x-forwarded-for": "203.0.113.9", "x-proxy-secret": "wrong"},
     )
+    assert auth_module._client_ip(request, _settings_with_secret("s3cret")) == "10.0.0.5"
 
-    assert auth_module._client_ip(request, settings) == "198.51.100.20"
+
+def test_client_ip_ignores_forwarded_ip_when_no_secret_is_configured() -> None:
+    # An empty configured secret must never "match" an empty header.
+    request = make_request(client_host="10.0.0.5", headers={"x-forwarded-for": "203.0.113.9"})
+    assert auth_module._client_ip(request, _settings_with_secret("")) == "10.0.0.5"
+
+
+def test_client_ip_takes_last_forwarded_entry() -> None:
+    request = make_request(
+        client_host="10.0.0.5",
+        headers={"x-forwarded-for": "1.1.1.1, 203.0.113.9", "x-proxy-secret": "s3cret"},
+    )
+    assert auth_module._client_ip(request, _settings_with_secret("s3cret")) == "203.0.113.9"
+

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import ipaddress
+import hmac
 from datetime import datetime
 from typing import Literal
 from uuid import UUID
@@ -132,50 +132,27 @@ def _clear_auth_cookies(*, response: Response, settings: Settings) -> None:
     )
 
 
-def _is_trusted_proxy(host: str, settings: Settings) -> bool:
-    if not host:
-        return False
-    if "*" in settings.trusted_proxy_ips:
-        return True
-
-    try:
-        client_ip = ipaddress.ip_address(host)
-    except ValueError:
-        return host in settings.trusted_proxy_ips
-
-    for raw_proxy in settings.trusted_proxy_ips:
-        try:
-            network = ipaddress.ip_network(raw_proxy, strict=False)
-        except ValueError:
-            if host == raw_proxy:
-                return True
-            continue
-        if client_ip in network:
-            return True
-    return False
-
-
-def _forwarded_client_ip(request: Request) -> str | None:
-    forwarded_for = request.headers.get("x-forwarded-for")
-    if forwarded_for:
-        first_hop = forwarded_for.split(",", 1)[0].strip()
-        if first_hop:
-            return first_hop
-
-    real_ip = request.headers.get("x-real-ip")
-    if real_ip and real_ip.strip():
-        return real_ip.strip()
-
-    return None
-
-
 def _client_ip(request: Request, settings: Settings) -> str:
-    direct_client_ip = request.client.host if request.client is not None else "unknown"
-    if _is_trusted_proxy(direct_client_ip, settings):
-        forwarded_client_ip = _forwarded_client_ip(request)
-        if forwarded_client_ip:
-            return forwarded_client_ip
-    return direct_client_ip
+    """Return the IP address we should rate limit this request under.
+
+    Behind the web proxy every request arrives from the proxy's own address,
+    so the proxy sends the real client IP in X-Forwarded-For. We only believe
+    that header when the request also carries our shared secret, otherwise
+    anyone could fake it and dodge the rate limits.
+    """
+    direct_ip = request.client.host if request.client is not None else "unknown"
+
+    sent_secret = request.headers.get("x-proxy-secret", "")
+    proxy_is_verified = bool(settings.proxy_secret) and hmac.compare_digest(
+        sent_secret.encode(), settings.proxy_secret.encode()
+    )
+    if not proxy_is_verified:
+        return direct_ip
+
+    forwarded = request.headers.get("x-forwarded-for", "")
+    # Our proxy sends exactly one address; if there are several take the last,
+    # which is the one added closest to us (see MDN on X-Forwarded-For).
+    return forwarded.split(",")[-1].strip() or direct_ip
 
 
 def _serialize_user(user: User) -> UserPayload:
