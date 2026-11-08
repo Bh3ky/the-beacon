@@ -1,7 +1,6 @@
-from fastapi.testclient import TestClient
-
-from rifthub_backend.config import Settings
 import rifthub_api.main as main_module
+from fastapi.testclient import TestClient
+from rifthub_backend.config import Settings
 
 
 def test_non_json_body_returns_422_not_500(monkeypatch) -> None:

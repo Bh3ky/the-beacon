@@ -1,10 +1,10 @@
 from __future__ import annotations
 
+from typing import Protocol
+
 from fastapi import Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from typing import Protocol
-
 from rifthub_backend.auth.service import AuthError
 from rifthub_backend.creation import CreationError
 from rifthub_backend.flags import FlaggingError
