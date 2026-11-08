@@ -101,9 +101,15 @@ async def voting_error_handler(_: Request, exc: Exception) -> JSONResponse:
 
 async def validation_error_handler(_: Request, exc: Exception) -> JSONResponse:
     assert isinstance(exc, RequestValidationError)
+    # exc.errors() can contain raw request bytes under "input", which can't be
+    # turned into JSON. only need to keep fields that client needs.
+    safe_errors = [
+        {"type": e["type"], "loc": list(e["loc"]), "msg": e["msg"]}
+        for e in exc.errors()
+    ]
     return error_response(
         status_code=422,
         code="validation_error",
         message="Request validation failed.",
-        details=exc.errors(),
+        details=safe_errors,
     )
