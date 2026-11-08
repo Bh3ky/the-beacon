@@ -3,7 +3,7 @@ from __future__ import annotations
 from uuid import UUID
 
 from fastapi import APIRouter, Request, status
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from rifthub_backend.db.types import FlagReason, FlagTargetType
 from rifthub_backend.flags import CreateFlagInput, create_flag
 
@@ -22,7 +22,7 @@ class CreateFlagRequest(BaseModel):
     target_type: FlagTargetType
     target_id: UUID
     reason_code: FlagReason
-    notes: str | None = None
+    notes: str | None = Field(default=None, max_length=1000)
 
 
 @router.post("", response_model=FlagResponse, status_code=status.HTTP_201_CREATED)

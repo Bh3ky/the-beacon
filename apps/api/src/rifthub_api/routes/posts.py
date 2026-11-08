@@ -5,7 +5,7 @@ from typing import Literal, Self
 from uuid import UUID
 
 from fastapi import APIRouter, Query, Request, status
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, Field, model_validator
 from pydantic_core import PydanticCustomError
 from rifthub_backend.creation import (
     CreateCommentInput,
@@ -38,9 +38,9 @@ router = APIRouter(prefix="/posts", tags=["posts"])
 class CreatePostRequest(BaseModel):
     post_type: PostType
     category: Category
-    title: str
-    url: str | None = None
-    body_markdown: str | None = None
+    title: str = Field(min_length=1, max_length=300)
+    url: str | None = Field(default=None, max_length=2048)
+    body_markdown: str | None = Field(default=None, max_length=20_000)
     job_expires_at: datetime | None = None
 
     @model_validator(mode="after")
@@ -57,7 +57,7 @@ class CreatePostRequest(BaseModel):
 
 
 class CreateCommentRequest(BaseModel):
-    body_markdown: str
+    body_markdown: str = Field(min_length=1, max_length=10_000)
     parent_comment_id: UUID | None = None
 
 
