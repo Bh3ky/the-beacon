@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from fastapi import APIRouter, Request, status
+from fastapi import APIRouter, Depends, Request, status
 from pydantic import BaseModel, Field
 from rifthub_backend.db.types import FlagReason, FlagTargetType
 from rifthub_backend.flags import CreateFlagInput, create_flag
@@ -11,6 +11,7 @@ from rifthub_api.dependencies import (
     AppSettings,
     DbSession,
     RequiredCurrentSession,
+    flag_limit,
     validate_session_csrf,
 )
 from rifthub_api.schemas import FlagResponse
@@ -25,7 +26,7 @@ class CreateFlagRequest(BaseModel):
     notes: str | None = Field(default=None, max_length=1000)
 
 
-@router.post("", response_model=FlagResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=FlagResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(flag_limit)])
 async def create_flag_route(
     payload: CreateFlagRequest,
     request: Request,

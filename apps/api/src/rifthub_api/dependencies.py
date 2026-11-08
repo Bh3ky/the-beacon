@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import hmac
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Awaitable, Callable
 from typing import Annotated
 
 from fastapi import Depends, Request
@@ -13,6 +13,7 @@ from rifthub_backend.db.types import UserRole
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .errors import ApiError
+from .rate_limit import rate_limiter
 
 
 async def get_db_session() -> AsyncIterator[AsyncSession]:
@@ -111,3 +112,48 @@ def validate_session_csrf(
             code="forbidden",
             message="CSRF validation failed.",
         )
+
+
+def limit_per_user(
+    action: str,
+    *,
+    limit: int,
+    window_seconds: int,
+    message: str,
+) -> Callable[..., Awaitable[None]]:
+    """Build a guard that allows each user `limit` calls to `action` per window.
+
+    The guard is attached to a route with `dependencies=[Depends(...)]`. FastAPI
+    runs it before the route function and the request stops with a 429 if the
+    user is over the limit.
+    """
+
+    async def check_limit(current_session: RequiredCurrentSession) -> None:
+        await rate_limiter.check(
+            # One counter per user per action, e.g. "comment:user:<user id>".
+            key=f"{action}:user:{current_session.user.id}",
+            limit=limit,
+            window_seconds=window_seconds,
+            message=message,
+        )
+
+    return check_limit
+
+
+# Limits from docs/SECURITY.md section 5.1. Tune them here, in one place.
+post_create_limit = limit_per_user(
+    "post", limit=5, window_seconds=60 * 60,
+    message="You are posting too quickly. Try again later.",
+)
+comment_create_limit = limit_per_user(
+    "comment", limit=20, window_seconds=60,
+    message="You are commenting too quickly. Slow down.",
+)
+vote_limit = limit_per_user(
+    "vote", limit=60, window_seconds=60,
+    message="You are voting too quickly. Slow down.",
+)
+flag_limit = limit_per_user(
+    "flag", limit=10, window_seconds=60,
+    message="You are reporting too quickly. Slow down.",
+)

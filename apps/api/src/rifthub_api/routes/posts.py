@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 from typing import Literal, Self
 from uuid import UUID
 
-from fastapi import APIRouter, Query, Request, status
+from fastapi import APIRouter, Depends, Query, Request, status
 from pydantic import BaseModel, Field, model_validator
 from pydantic_core import PydanticCustomError
 from rifthub_backend.creation import (
@@ -23,7 +23,10 @@ from rifthub_api.dependencies import (
     CurrentSessionDep,
     DbSession,
     RequiredCurrentSession,
+    comment_create_limit,
+    post_create_limit,
     validate_session_csrf,
+    vote_limit,
 )
 from rifthub_api.schemas import (
     CommentListResponse,
@@ -71,7 +74,7 @@ def _viewer_context(current_session: CurrentSessionDep) -> tuple[UUID | None, Us
     return current_session.user.id, current_session.user.role
 
 
-@router.post("", response_model=PostResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=PostResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(post_create_limit)])
 async def create_post_route(
     payload: CreatePostRequest,
     request: Request,
@@ -140,7 +143,7 @@ async def post_comments(
     )
 
 
-@router.post("/{post_id}/comments", response_model=CommentResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/{post_id}/comments", response_model=CommentResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(comment_create_limit)])
 async def create_post_comment(
     post_id: UUID,
     payload: CreateCommentRequest,
@@ -169,7 +172,7 @@ async def create_post_comment(
     )
 
 
-@router.post("/{post_id}/vote", response_model=PostVoteResponse)
+@router.post("/{post_id}/vote", response_model=PostVoteResponse, dependencies=[Depends(vote_limit)])
 async def create_post_vote(
     post_id: UUID,
     payload: VoteRequest,
@@ -195,7 +198,7 @@ async def create_post_vote(
     )
 
 
-@router.delete("/{post_id}/vote", response_model=PostVoteResponse)
+@router.delete("/{post_id}/vote", response_model=PostVoteResponse, dependencies=[Depends(vote_limit)])
 async def delete_post_vote(
     post_id: UUID,
     request: Request,

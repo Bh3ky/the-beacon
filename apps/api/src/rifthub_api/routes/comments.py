@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
 from rifthub_backend.voting import remove_comment_vote, vote_on_comment
 
@@ -12,6 +12,7 @@ from rifthub_api.dependencies import (
     DbSession,
     RequiredCurrentSession,
     validate_session_csrf,
+    vote_limit,
 )
 from rifthub_api.schemas import CommentVoteResponse
 
@@ -22,7 +23,7 @@ class VoteRequest(BaseModel):
     vote_value: Literal[1, -1]
 
 
-@router.post("/{comment_id}/vote", response_model=CommentVoteResponse)
+@router.post("/{comment_id}/vote", response_model=CommentVoteResponse, dependencies=[Depends(vote_limit)])
 async def create_comment_vote(
     comment_id: UUID,
     payload: VoteRequest,
@@ -48,7 +49,7 @@ async def create_comment_vote(
     )
 
 
-@router.delete("/{comment_id}/vote", response_model=CommentVoteResponse)
+@router.delete("/{comment_id}/vote", response_model=CommentVoteResponse, dependencies=[Depends(vote_limit)])
 async def delete_comment_vote(
     comment_id: UUID,
     request: Request,
