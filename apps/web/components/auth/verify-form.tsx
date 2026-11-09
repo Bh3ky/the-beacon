@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { BrowserApiError, verifyAccount } from "@/lib/browser-api";
+import { safeRedirectPath } from "@/lib/safe-redirect";
 
 import { FormField } from "./form-field";
 
@@ -32,7 +33,7 @@ export function VerifyForm({ initialToken, nextHref }: VerifyFormProps) {
       await verifyAccount({ token: targetToken });
       setState("success");
       setMessage("Your account is verified and your session is live.");
-      router.push(nextHref || "/");
+      router.push(safeRedirectPath(nextHref));
       router.refresh();
     } catch (error) {
       setState("error");

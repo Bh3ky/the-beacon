@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { BrowserApiError, login, resendVerification } from "@/lib/browser-api";
+import { safeRedirectPath } from "@/lib/safe-redirect";
 
 import { FormField } from "./form-field";
 
@@ -30,7 +31,7 @@ export function LoginForm({ nextHref, registeredEmail }: LoginFormProps) {
 
     try {
       await login({ email, password });
-      router.push(nextHref || "/");
+      router.push(safeRedirectPath(nextHref));
       router.refresh();
     } catch (error) {
       if (error instanceof BrowserApiError) {
