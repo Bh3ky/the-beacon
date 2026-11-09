@@ -106,6 +106,37 @@ class Settings:
     ingestion_system_email: str = "ingestion-bot@localhost"
 
 
+def _check_production_settings(settings: Settings) -> None:
+    if settings.environment in {"development", "test"}:
+        return
+
+    problems: list[str] = []
+
+    if len(settings.app_secret) < 32:
+        problems.append("RIFTHUB_APP_SECRET must be at least 32 characters")
+    if len(settings.proxy_secret) < 32:
+        problems.append("RIFTHUB_PROXY_SECRET must be at least 32 characters")
+
+    # These two default to localhost, which is wrong for a real deployment.
+    if not settings.frontend_base_url.startswith("https://"):
+        problems.append("RIFTHUB_FRONTEND_BASE_URL must be an https:// URL")
+    if not settings.allowed_origins or any(
+        not origin.startswith("https://") for origin in settings.allowed_origins
+    ):
+        problems.append("RIFTHUB_ALLOWED_ORIGINS must list only https:// origins")
+
+    # "log" and "noop" never send an email, so nobody could ever verify.
+    if settings.verification_delivery_mode != "resend":
+        problems.append("RIFTHUB_VERIFICATION_DELIVERY_MODE must be 'resend'")
+    if not settings.resend_api_key:
+        problems.append("RIFTHUB_RESEND_API_KEY is required")
+    if "localhost" in settings.verification_from_email:
+        problems.append("RIFTHUB_VERIFICATION_FROM_EMAIL must use your verified Resend domain")
+
+    if problems:
+        raise ConfigError("Invalid production configuration: " + "; ".join(problems))
+
+
 def get_settings() -> Settings:
     _load_dotenv()
     database_url = _required_env("RIFTHUB_DATABASE_URL")
@@ -125,7 +156,7 @@ def get_settings() -> Settings:
     if rate_limit_backend == "redis" and not redis_url:
         raise ConfigError("Missing required environment variable: RIFTHUB_REDIS_URL")
 
-    return Settings(
+    settings = Settings(
         environment=environment,
         log_level=os.getenv("RIFTHUB_LOG_LEVEL", "INFO").upper(),
         api_host=os.getenv("RIFTHUB_API_HOST", "127.0.0.1"),
@@ -167,3 +198,5 @@ def get_settings() -> Settings:
         ingestion_system_email=os.getenv("RIFTHUB_INGESTION_SYSTEM_EMAIL", "ingestion-bot@localhost").strip()
         or "ingestion-bot@localhost",
     )
+    _check_production_settings(settings)
+    return settings

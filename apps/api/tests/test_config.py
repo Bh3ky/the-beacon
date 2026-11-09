@@ -176,3 +176,49 @@ def test_settings_load_repo_root_dotenv(monkeypatch, tmp_path) -> None:
     assert settings.database_url.endswith("/from_dotenv")
     assert settings.migration_database_url.endswith("/from_dotenv_migration")
     assert settings.sql_echo is True
+
+
+VALID_PRODUCTION_ENV = {
+    "RIFTHUB_DATABASE_URL": "postgresql+asyncpg://user:pass@db.example.com:5432/rifthub",
+    "RIFTHUB_ENV": "production",
+    "RIFTHUB_REDIS_URL": "redis://redis.example.com:6379/0",
+    "RIFTHUB_APP_SECRET": "a" * 32,
+    "RIFTHUB_PROXY_SECRET": "b" * 32,
+    "RIFTHUB_FRONTEND_BASE_URL": "https://rifthub.example.com",
+    "RIFTHUB_ALLOWED_ORIGINS": "https://rifthub.example.com",
+    "RIFTHUB_VERIFICATION_DELIVERY_MODE": "resend",
+    "RIFTHUB_RESEND_API_KEY": "re_test_key",
+    "RIFTHUB_VERIFICATION_FROM_EMAIL": "RiftHub <noreply@rifthub.example.com>",
+}
+
+
+def _use_production_env(monkeypatch, **overrides) -> None:
+    # Don't read the real .env file; use only the values listed here.
+    monkeypatch.setattr(config_module, "_DOTENV_LOADED", True)
+    monkeypatch.setattr(config_module, "_load_dotenv", lambda: None)
+    monkeypatch.delenv("RIFTHUB_RATE_LIMIT_BACKEND", raising=False)
+    for name, value in {**VALID_PRODUCTION_ENV, **overrides}.items():
+        monkeypatch.setenv(name, value)
+
+
+def test_valid_production_settings_are_accepted(monkeypatch) -> None:
+    _use_production_env(monkeypatch)
+    assert get_settings().environment == "production"
+
+
+@pytest.mark.parametrize(
+    ("name", "bad_value"),
+    [
+        ("RIFTHUB_APP_SECRET", "too-short"),
+        ("RIFTHUB_PROXY_SECRET", "too-short"),
+        ("RIFTHUB_FRONTEND_BASE_URL", "http://localhost:3000"),
+        ("RIFTHUB_ALLOWED_ORIGINS", "http://localhost:3000"),
+        ("RIFTHUB_VERIFICATION_DELIVERY_MODE", "noop"),
+        ("RIFTHUB_RESEND_API_KEY", ""),
+        ("RIFTHUB_VERIFICATION_FROM_EMAIL", "noreply@localhost"),
+    ],
+)
+def test_unsafe_production_settings_are_rejected(monkeypatch, name, bad_value) -> None:
+    _use_production_env(monkeypatch, **{name: bad_value})
+    with pytest.raises(ConfigError, match=name):
+        get_settings()
