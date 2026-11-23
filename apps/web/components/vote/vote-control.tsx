@@ -58,13 +58,14 @@ export function VoteControl({
         setViewerVote(response.comment.viewer_vote);
       }
     } catch (errorValue) {
-      if (
-        errorValue instanceof BrowserApiError &&
-        (errorValue.status === 401 || errorValue.status === 403)
-      ) {
+      // 401 = not signed in (or the session expired), should send them to log in.
+      // other errors, like 403 "you cannot vote on your own content", are shown
+      // below as a message instead.
+      if (errorValue instanceof BrowserApiError && errorValue.status === 401) {
         router.push(`/login?next=${encodeURIComponent(pathname || "/")}`);
         return;
       }
+
 
       setError(
         errorValue instanceof BrowserApiError

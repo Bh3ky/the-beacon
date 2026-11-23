@@ -44,10 +44,9 @@ export function CommentComposer({
       onSubmitted?.();
       router.refresh();
     } catch (errorValue) {
-      if (
-        errorValue instanceof BrowserApiError &&
-        (errorValue.status === 401 || errorValue.status === 403)
-      ) {
+      // 401 = not signed in, so redirect. anything else (for example a
+      // suspended account getting a 403) shows the server's message below.
+      if (errorValue instanceof BrowserApiError && errorValue.status === 401) {
         router.push(`/login?next=${encodeURIComponent(pathname || "/")}`);
         return;
       }
