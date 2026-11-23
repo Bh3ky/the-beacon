@@ -596,12 +596,14 @@ This is a UI concern, but ranking should provide the inputs.
 
 ## 15.1 V1 recommendation
 
-The platform should launch with:
+**As built:** posts and comments accept both upvotes (`1`) and downvotes (`-1`), and the UI shows both arrows. The score is `upvotes - downvotes`.
+
+The original recommendation below was to launch upvote-only. It is kept for context in case downvotes are restricted later.
+
+The platform was to launch with:
 
 - upvote-only UI for posts
 - upvote-only UI for comments
-
-Even if the schema supports `-1`, public downvotes should remain disabled initially.
 
 ## 15.2 Why upvote-only first
 

@@ -45,7 +45,25 @@ This specification is designed for a **FastAPI** backend and a **Next.js** front
    - Business logic lives in service layers, not in route handlers.
 
 5. **Future-safe**
-   - The API supports future expansion such as moderator-only downvotes, bookmarks, and source analytics without requiring route redesign.
+   - The API supports future expansion such as bookmarks and source analytics without requiring route redesign.
+
+---
+
+## Implementation status
+
+This document is the full design. The routes below exist today, under `/v1`. Anything else in this file is planned and not built yet.
+
+| Area | Implemented routes |
+|---|---|
+| Auth | `POST /auth/register`, `/auth/verify`, `/auth/login`, `/auth/logout`, `/auth/resend-verification`; `GET /auth/me` |
+| Feeds | `GET /feeds/top`, `/feeds/new`, `/feeds/ask`, `/feeds/show`, `/feeds/jobs` |
+| Posts | `POST /posts`; `GET /posts/{id}`; `GET` and `POST /posts/{id}/comments`; `POST` and `DELETE /posts/{id}/vote` |
+| Comments | `POST` and `DELETE /comments/{id}/vote` |
+| Flags | `POST /flags` |
+| Stats | `GET /stats/summary` |
+| Moderation | `GET /moderation/flags`, `/moderation/ingestion/items`, `/moderation/ingestion/sources`; `POST /moderation/flags/{id}/dismiss`, `/moderation/posts/{id}/remove`, `/moderation/comments/{id}/remove`, `/moderation/users/{id}/suspend`, `/moderation/users/{id}/ban`, `/moderation/ingestion/items/{id}/approve`, `/moderation/ingestion/items/{id}/reject` |
+
+Not built: editing or deleting posts and comments, `GET /posts` listing, user profiles, search, bookmarks, and the `/admin/*` routes.
 
 ---
 
@@ -56,7 +74,7 @@ This specification is designed for a **FastAPI** backend and a **Next.js** front
 Example:
 
 ```text
-https://api.thebeacon.africa
+https://api.your-domain.example
 ```
 
 Versioning:
@@ -68,7 +86,7 @@ Versioning:
 Example full base:
 
 ```text
-https://api.thebeacon.africa/v1
+https://api.your-domain.example/v1
 ```
 
 All endpoints below assume the `/v1` prefix.
@@ -110,7 +128,7 @@ Because frontend and backend may be hosted separately (`Vercel` + `Railway`), cr
 Example:
 
 ```text
-Cookie: beacon_session=<opaque-session-id>
+Cookie: rifthub_session=<opaque-session-id>
 X-CSRF-Token: <csrf-token>
 ```
 
@@ -303,7 +321,7 @@ This keeps responses self-describing and easier to extend.
 Notes:
 
 - `viewer_vote is 1, -1, or null`
-- for upvote-only UI, frontend only uses `1` or `null`
+- the UI sends `1` or `-1`; `null` means the viewer has not voted
 - `viewer_can_edit` and `viewer_can_moderate` are convenience fields
 
 
@@ -1145,6 +1163,8 @@ Recommended behavior: accept the slug, resolve by ID, and include the canonical 
 PATCH /posts/{post_id}
 ```
 
+> **Status: not implemented yet.** There is no edit endpoint.
+
 **Auth**
 
 Required.
@@ -1407,6 +1427,8 @@ GET /posts/{post_id}/comments
 PATCH /comments/{comment_id}
 ```
 
+> **Status: not implemented yet.** There is no edit endpoint.
+
 **Auth**
 
 Required.
@@ -1487,7 +1509,7 @@ Soft deletion is preferred. Child comments remain attached to preserve thread in
 
 # 13. Voting Endpoints
 
-Recommended v1 behavior: the UI exposes upvotes only, but payloads remain compatible with future downvotes.
+Both upvotes (`1`) and downvotes (`-1`) are accepted and shown in the UI.
 
 ## 13.1 Vote on post
 

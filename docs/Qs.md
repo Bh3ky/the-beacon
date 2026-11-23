@@ -17,10 +17,10 @@ It should not remain a second source of truth once an item is resolved elsewhere
 
 | Question | Decision |
 | --- | --- |
-| Are downvotes enabled for users in v1? | No. V1 is upvote-only. |
-| Are posts editable after submission, and for how long? | Yes. Posts are editable for `15 minutes`. |
-| Are comments editable after submission, and for how long? | Yes. Comments are editable for `15 minutes`. |
-| Are reposts of old links allowed after a time window? | Yes. Link reposts are allowed after `30 days`. |
+| Are downvotes enabled for users in v1? | Yes. The API accepts `1` and `-1`, and the UI shows both arrows. (The original plan was upvote-only; this changed during implementation.) |
+| Are posts editable after submission, and for how long? | Planned: a `15 minute` edit window. **Not implemented yet.** There is no edit endpoint; responses only carry a `viewer_can_edit` flag. |
+| Are comments editable after submission, and for how long? | Planned: a `15 minute` edit window. **Not implemented yet.** Same as posts. |
+| Are reposts of old links allowed after a time window? | Planned: allowed after `30 days`. **Not implemented yet.** Today a link URL cannot be submitted again while the earlier post is active (database unique index), with no time window. |
 | Will jobs expire automatically? | Yes. Jobs expire after `30 days`. |
 | Will ingested content be clearly labeled as system-imported? | Yes. Ingested content should carry source attribution. |
 | Is moderator approval required for new users' first submissions? | New users' first `1-3` submissions may go through stricter anti-spam checks. |

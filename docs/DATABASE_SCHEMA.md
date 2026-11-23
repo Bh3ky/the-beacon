@@ -445,7 +445,7 @@ Recommended check constraints:
 
 Recommended:
 
-- unique partial index on `url_normalized` where `url_normalized is not null` and post is active or within repost window policy
+- unique partial index on `url_normalized` where `post_type = 'link'` and `status = 'active'` and `url_normalized is not null` (`uq_posts_active_link_url_normalized`). **As built, there is no repost window:** a URL is blocked for as long as the earlier post is active.
 
 Do not make `slug` globally unique by itself unless you want rigid slug collision handling. Safer options:
 
@@ -926,6 +926,8 @@ This supports:
 The schema should support a later rule such as:
 
 - exact normalized URL cannot be re-posted for 30 days
+
+**Status: not implemented yet.** The partial unique index currently blocks reposts for as long as the earlier post stays active.
 
 This is primarily application logic. The partial unique index can help but should not rigidly prevent all future reposts forever unless that is desired.
 

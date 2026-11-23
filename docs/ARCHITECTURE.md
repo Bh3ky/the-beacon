@@ -906,13 +906,13 @@ Posts
 - `GET /posts`
 - `POST /posts`
 - `GET /posts/{post_id}`
-- `PATCH /posts/{post_id}`
+- `PATCH /posts/{post_id}` (not implemented yet)
 - `DELETE /posts/{post_id}`
 
 Comments
 - `POST /posts/{post_id}/comments`
 - `GET /posts/{post_id}/comments`
-- `PATCH /comments/{comment_id}`
+- `PATCH /comments/{comment_id}` (not implemented yet)
 - `DELETE /comments/{comment_id}`
 
 Votes

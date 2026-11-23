@@ -128,7 +128,7 @@ Passwords must be stored securely.
 
 Requirements:
 
-- hashed using bcrypt or argon2
+- hashed with PBKDF2-HMAC-SHA256 (600,000 iterations, random 16-byte salt per password)
 - never stored in plaintext
 - never logged
 
@@ -197,7 +197,9 @@ Methods:
 Example rule:
 
 
-5 failed attempts → temporary lockout
+5 attempts per minute per IP, and 10 attempts per 15 minutes per email address
+
+Going over a limit returns `429`. There is no permanent account lockout.
 
 
 ---
@@ -319,9 +321,9 @@ CORS should only allow trusted origins.
 Example:
 
 
-https://thebeacon.africa
+https://your-domain.example
 
-https://staging.thebeacon.africa
+https://staging.your-domain.example
 
 http://localhost:3000
 
@@ -444,6 +446,8 @@ Example:
 
 first 24 hours → limited submission rate
 
+**Status: not implemented yet.** All active accounts currently share the same limits.
+
 
 This slows automated spam campaigns.
 
@@ -490,6 +494,8 @@ Detect unusual voting patterns:
 - coordinated voting
 
 These can trigger moderation review.
+
+**Status: not implemented yet.** Self-votes are blocked and per-user vote rate limits exist, but there is no pattern detection.
 
 ---
 
