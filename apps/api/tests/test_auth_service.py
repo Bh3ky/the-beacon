@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import threading
 from datetime import UTC, datetime
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
@@ -106,3 +107,29 @@ async def test_dispatch_verification_records_failed_status(monkeypatch) -> None:
     assert token_row.delivery_provider_message_id is None
     assert token_row.delivery_error == "smtp down"
     db.commit.assert_awaited_once()
+
+
+@pytest.mark.anyio
+async def test_login_hashes_password_off_the_event_loop_thread(monkeypatch) -> None:
+    main_thread = threading.current_thread()
+    seen_threads = []
+
+    def fake_verify_password(raw_password: str, stored_hash: str) -> bool:
+        seen_threads.append(threading.current_thread())
+        return False
+
+    async def fake_scalar(_statement):
+        return SimpleNamespace(password_hash="stored-hash")
+
+    monkeypatch.setattr(service_module, "verify_password", fake_verify_password)
+
+    with pytest.raises(service_module.AuthError):
+        await service_module.login_user(
+            db=SimpleNamespace(scalar=fake_scalar),  # type: ignore[arg-type]
+            settings=make_settings(),
+            email="user@example.com",
+            password="wrong-password",
+        )
+
+    assert seen_threads
+    assert all(thread is not main_thread for thread in seen_threads)

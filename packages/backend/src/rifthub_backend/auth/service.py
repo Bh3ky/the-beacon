@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -249,7 +250,7 @@ async def register_user(
         raise AuthError(422, "validation_error", str(exc)) from exc
 
     try:
-        password_hash = hash_password(password)
+        password_hash = await asyncio.to_thread(hash_password, password)
     except ValueError as exc:
         raise AuthError(422, "validation_error", str(exc)) from exc
 
@@ -392,9 +393,9 @@ async def login_user(
 
     user = await db.scalar(select(User).where(User.email == canonical_email))
     if user is None:
-        verify_password(password, _DUMMY_PASSWORD_HASH)
+        await asyncio.to_thread(verify_password, password, _DUMMY_PASSWORD_HASH)
         raise AuthError(401, "invalid_credentials", "Invalid credentials.")
-    if not verify_password(password, user.password_hash):
+    if not await asyncio.to_thread(verify_password, password, user.password_hash):
         raise AuthError(401, "invalid_credentials", "Invalid credentials.")
     if user.status is UserStatus.PENDING:
         raise AuthError(
