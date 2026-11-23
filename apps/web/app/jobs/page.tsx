@@ -8,33 +8,20 @@ export default async function JobsPage({
 }) {
   const resolvedSearchParams = await searchParams;
 
-  try {
-    const feed = await getJobsFeed(15, resolvedSearchParams?.cursor);
+  const feed = await getJobsFeed(15, resolvedSearchParams?.cursor);
 
-    return (
-      <FeedPage
-        activeTab="jobs"
-        eyebrow="Roles and opportunities"
-        title="Jobs"
-        subtitle="A dedicated jobs feed for African tech teams hiring across the continent and globally."
-        feed={feed}
-        moreHref={
-          feed.page_info.next_cursor
-            ? `/jobs?cursor=${encodeURIComponent(feed.page_info.next_cursor)}`
-            : null
-        }
-      />
-    );
-  } catch {
-    return (
-      <FeedPage
-        activeTab="jobs"
-        eyebrow="Roles and opportunities"
-        title="Jobs"
-        subtitle="A dedicated jobs feed for African tech teams hiring across the continent and globally."
-        feed={{ items: [], page_info: { next_cursor: null, has_next_page: false } }}
-        moreHref={null}
-      />
-    );
-  }
+  return (
+    <FeedPage
+      activeTab="jobs"
+      eyebrow="Roles and opportunities"
+      title="Jobs"
+      subtitle="A dedicated jobs feed for African tech teams hiring across the continent and globally."
+      feed={feed}
+      moreHref={
+        feed.page_info.next_cursor
+          ? `/jobs?cursor=${encodeURIComponent(feed.page_info.next_cursor)}`
+          : null
+      }
+    />
+  );
 }

@@ -75,7 +75,7 @@ export default async function PostPage({
       </AppShell>
     );
   } catch (error) {
-    if (error instanceof ApiFetchError && error.status === 404) {
+    if (error instanceof ApiFetchError && (error.status === 404 || error.status === 422)) {
       notFound();
     }
     throw error;

@@ -35,7 +35,7 @@ async function HomeFeed({ cursor }: { cursor?: string }) {
     return (
       <FeedEmptyState
         title="Feed unavailable"
-        message="The frontend is wired to the real backend now. Start the API and refresh this page to load live stories."
+        message="We couldn't load stories right now. Please try again in a moment."
       />
     );
   }
