@@ -7,6 +7,7 @@ from math import log2, pow
 from uuid import UUID
 
 from sqlalchemy import delete, select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
@@ -271,6 +272,89 @@ def _comment_vote_read_from_values(
     )
 
 
+async def _bump_post_counters(
+    *, db: AsyncSession, post_id: UUID, delta: VoteDelta, now: datetime
+) -> tuple[int, int, int]:
+    result = await db.execute(
+        update(Post)
+        .where(Post.id == post_id)
+        .values(
+            upvote_count=Post.upvote_count + delta.upvote_delta,
+            downvote_count=Post.downvote_count + delta.downvote_delta,
+            score=Post.score + delta.score_delta,
+            updated_at=now,
+        )
+        .returning(Post.upvote_count, Post.downvote_count, Post.score)
+    )
+    upvotes, downvotes, score = result.one()
+    return upvotes, downvotes, score
+
+
+async def _bump_comment_counters(
+    *, db: AsyncSession, comment_id: UUID, delta: VoteDelta, now: datetime
+) -> tuple[int, int, int]:
+    result = await db.execute(
+        update(Comment)
+        .where(Comment.id == comment_id)
+        .values(
+            upvote_count=Comment.upvote_count + delta.upvote_delta,
+            downvote_count=Comment.downvote_count + delta.downvote_delta,
+            score=Comment.score + delta.score_delta,
+            updated_at=now,
+        )
+        .returning(Comment.upvote_count, Comment.downvote_count, Comment.score)
+    )
+    upvotes, downvotes, score = result.one()
+    return upvotes, downvotes, score
+
+
+async def _finish_post_vote(
+    *, db: AsyncSession, post: Post, delta: VoteDelta, viewer_vote: int | None
+) -> PostVoteRead:
+    now = _utcnow()
+    upvotes, downvotes, score = await _bump_post_counters(
+        db=db, post_id=post.id, delta=delta, now=now
+    )
+    rank_score = compute_post_rank_score(
+        score=score,
+        submitted_at=post.submitted_at,
+        comment_count=post.comment_count,
+        category=post.category,
+        domain_trust_score=post.domain.trust_score if post.domain is not None else None,
+        now=now,
+    )
+    await db.execute(update(Post).where(Post.id == post.id).values(rank_score=rank_score))
+    await db.commit()
+    return _post_vote_read_from_values(
+        post_id=post.id,
+        upvote_count=upvotes,
+        downvote_count=downvotes,
+        score=score,
+        rank_score=rank_score,
+        viewer_vote=viewer_vote,
+    )
+
+
+async def _finish_comment_vote(
+    *, db: AsyncSession, comment: Comment, delta: VoteDelta, viewer_vote: int | None
+) -> CommentVoteRead:
+    now = _utcnow()
+    upvotes, downvotes, score = await _bump_comment_counters(
+        db=db, comment_id=comment.id, delta=delta, now=now
+    )
+    rank_score = compute_comment_rank_score(score=score, created_at=comment.created_at, now=now)
+    await db.execute(update(Comment).where(Comment.id == comment.id).values(rank_score=rank_score))
+    await db.commit()
+    return _comment_vote_read_from_values(
+        comment_id=comment.id,
+        upvote_count=upvotes,
+        downvote_count=downvotes,
+        score=score,
+        rank_score=rank_score,
+        viewer_vote=viewer_vote,
+    )
+
+
 async def vote_on_post(
     *,
     db: AsyncSession,
@@ -288,43 +372,17 @@ async def vote_on_post(
     if not delta.changed:
         return _post_vote_read(post=post, viewer_vote=vote_value)
 
-    now = _utcnow()
-    next_upvote_count = post.upvote_count + delta.upvote_delta
-    next_downvote_count = post.downvote_count + delta.downvote_delta
-    next_score = post.score + delta.score_delta
-    next_rank_score = compute_post_rank_score(
-        score=next_score,
-        submitted_at=post.submitted_at,
-        comment_count=post.comment_count,
-        category=post.category,
-        domain_trust_score=post.domain.trust_score if post.domain is not None else None,
-        now=now,
-    )
     if existing_vote is None:
         db.add(PostVote(post_id=post.id, user_id=user.id, vote_value=vote_value))
+        try:
+            await db.flush()
+        except IntegrityError:
+            await db.rollback()
+            raise VotingError(409, "conflict", "Your vote is already being recorded.") from None
     else:
         existing_vote.vote_value = vote_value
 
-    await db.execute(
-        update(Post)
-        .where(Post.id == post.id)
-        .values(
-            upvote_count=next_upvote_count,
-            downvote_count=next_downvote_count,
-            score=next_score,
-            rank_score=next_rank_score,
-            updated_at=now,
-        )
-    )
-    await db.commit()
-    return _post_vote_read_from_values(
-        post_id=post.id,
-        upvote_count=next_upvote_count,
-        downvote_count=next_downvote_count,
-        score=next_score,
-        rank_score=next_rank_score,
-        viewer_vote=vote_value,
-    )
+    return await _finish_post_vote(db=db, post=post, delta=delta, viewer_vote=vote_value)
 
 
 async def remove_post_vote(
@@ -337,45 +395,19 @@ async def remove_post_vote(
     post = await _load_active_post(db=db, post_id=post_id)
     ensure_not_self_vote(user_id=user.id, author_id=post.author_id)
     existing_vote = await _load_post_vote(db=db, post_id=post_id, user_id=user.id)
-    previous_vote = existing_vote.vote_value if existing_vote is not None else None
-    delta = compute_vote_delta(previous_vote=previous_vote, next_vote=None)
 
-    if not delta.changed:
+    if existing_vote is None:
         return _post_vote_read(post=post, viewer_vote=None)
 
-    now = _utcnow()
-    next_upvote_count = post.upvote_count + delta.upvote_delta
-    next_downvote_count = post.downvote_count + delta.downvote_delta
-    next_score = post.score + delta.score_delta
-    next_rank_score = compute_post_rank_score(
-        score=next_score,
-        submitted_at=post.submitted_at,
-        comment_count=post.comment_count,
-        category=post.category,
-        domain_trust_score=post.domain.trust_score if post.domain is not None else None,
-        now=now,
+    result = await db.execute(
+        delete(PostVote).where(PostVote.id == existing_vote.id).returning(PostVote.vote_value)
     )
-    await db.execute(delete(PostVote).where(PostVote.id == existing_vote.id))
-    await db.execute(
-        update(Post)
-        .where(Post.id == post.id)
-        .values(
-            upvote_count=next_upvote_count,
-            downvote_count=next_downvote_count,
-            score=next_score,
-            rank_score=next_rank_score,
-            updated_at=now,
-        )
-    )
-    await db.commit()
-    return _post_vote_read_from_values(
-        post_id=post.id,
-        upvote_count=next_upvote_count,
-        downvote_count=next_downvote_count,
-        score=next_score,
-        rank_score=next_rank_score,
-        viewer_vote=None,
-    )
+    removed_vote = result.scalar_one_or_none()
+    if removed_vote is None:
+        return _post_vote_read(post=post, viewer_vote=None)
+
+    delta = compute_vote_delta(previous_vote=removed_vote, next_vote=None)
+    return await _finish_post_vote(db=db, post=post, delta=delta, viewer_vote=None)
 
 
 async def vote_on_comment(
@@ -395,36 +427,17 @@ async def vote_on_comment(
     if not delta.changed:
         return _comment_vote_read(comment=comment, viewer_vote=vote_value)
 
-    now = _utcnow()
-    next_upvote_count = comment.upvote_count + delta.upvote_delta
-    next_downvote_count = comment.downvote_count + delta.downvote_delta
-    next_score = comment.score + delta.score_delta
-    next_rank_score = compute_comment_rank_score(score=next_score, created_at=comment.created_at, now=now)
     if existing_vote is None:
         db.add(CommentVote(comment_id=comment.id, user_id=user.id, vote_value=vote_value))
+        try:
+            await db.flush()
+        except IntegrityError:
+            await db.rollback()
+            raise VotingError(409, "conflict", "Your vote is already being recorded.") from None
     else:
         existing_vote.vote_value = vote_value
 
-    await db.execute(
-        update(Comment)
-        .where(Comment.id == comment.id)
-        .values(
-            upvote_count=next_upvote_count,
-            downvote_count=next_downvote_count,
-            score=next_score,
-            rank_score=next_rank_score,
-            updated_at=now,
-        )
-    )
-    await db.commit()
-    return _comment_vote_read_from_values(
-        comment_id=comment.id,
-        upvote_count=next_upvote_count,
-        downvote_count=next_downvote_count,
-        score=next_score,
-        rank_score=next_rank_score,
-        viewer_vote=vote_value,
-    )
+    return await _finish_comment_vote(db=db, comment=comment, delta=delta, viewer_vote=vote_value)
 
 
 async def remove_comment_vote(
@@ -437,35 +450,16 @@ async def remove_comment_vote(
     comment = await _load_active_comment(db=db, comment_id=comment_id)
     ensure_not_self_vote(user_id=user.id, author_id=comment.author_id)
     existing_vote = await _load_comment_vote(db=db, comment_id=comment_id, user_id=user.id)
-    previous_vote = existing_vote.vote_value if existing_vote is not None else None
-    delta = compute_vote_delta(previous_vote=previous_vote, next_vote=None)
 
-    if not delta.changed:
+    if existing_vote is None:
         return _comment_vote_read(comment=comment, viewer_vote=None)
 
-    now = _utcnow()
-    next_upvote_count = comment.upvote_count + delta.upvote_delta
-    next_downvote_count = comment.downvote_count + delta.downvote_delta
-    next_score = comment.score + delta.score_delta
-    next_rank_score = compute_comment_rank_score(score=next_score, created_at=comment.created_at, now=now)
-    await db.execute(delete(CommentVote).where(CommentVote.id == existing_vote.id))
-    await db.execute(
-        update(Comment)
-        .where(Comment.id == comment.id)
-        .values(
-            upvote_count=next_upvote_count,
-            downvote_count=next_downvote_count,
-            score=next_score,
-            rank_score=next_rank_score,
-            updated_at=now,
-        )
+    result = await db.execute(
+        delete(CommentVote).where(CommentVote.id == existing_vote.id).returning(CommentVote.vote_value)
     )
-    await db.commit()
-    return _comment_vote_read_from_values(
-        comment_id=comment.id,
-        upvote_count=next_upvote_count,
-        downvote_count=next_downvote_count,
-        score=next_score,
-        rank_score=next_rank_score,
-        viewer_vote=None,
-    )
+    removed_vote = result.scalar_one_or_none()
+    if removed_vote is None:
+        return _comment_vote_read(comment=comment, viewer_vote=None)
+
+    delta = compute_vote_delta(previous_vote=removed_vote, next_vote=None)
+    return await _finish_comment_vote(db=db, comment=comment, delta=delta, viewer_vote=None)
