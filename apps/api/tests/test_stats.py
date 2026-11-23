@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import asyncio
 from collections.abc import AsyncIterator
 
+import pytest
 import rifthub_api.dependencies as dependencies_module
 import rifthub_api.main as main_module
 import rifthub_api.routes.stats as stats_module
@@ -81,3 +83,65 @@ def test_platform_summary_returns_expected_payload(monkeypatch) -> None:
         "jobs_live": 18,
         "jobs_live_delta_pct": 12.5,
     }
+
+
+@pytest.fixture(autouse=True)
+def fresh_summary_cache(monkeypatch) -> None:
+    monkeypatch.setattr(stats_module, "_cache", stats_module._SummaryCache())
+
+
+def make_snapshot() -> PlatformSummarySnapshot:
+    return PlatformSummarySnapshot(
+        builders_this_month=1,
+        builders_delta_pct=None,
+        funding_stories_last_30d=2,
+        funding_stories_delta_pct=None,
+        posts_per_hour=3.0,
+        posts_per_hour_delta_pct=None,
+        comments_this_week=4,
+        comments_delta_pct=None,
+        jobs_live=5,
+        jobs_live_delta_pct=None,
+    )
+
+
+def count_queries(monkeypatch) -> list[int]:
+    calls: list[int] = []
+
+    async def fake_get_platform_summary(_: object) -> PlatformSummarySnapshot:
+        calls.append(1)
+        await asyncio.sleep(0.05)
+        return make_snapshot()
+
+    monkeypatch.setattr(stats_module, "get_platform_summary", fake_get_platform_summary)
+    return calls
+
+
+@pytest.mark.anyio
+async def test_summary_is_served_from_cache_within_a_minute(monkeypatch) -> None:
+    calls = count_queries(monkeypatch)
+
+    await stats_module.platform_summary(db=object())  # type: ignore[arg-type]
+    await stats_module.platform_summary(db=object())  # type: ignore[arg-type]
+
+    assert len(calls) == 1
+
+
+@pytest.mark.anyio
+async def test_summary_is_refreshed_after_the_cache_expires(monkeypatch) -> None:
+    calls = count_queries(monkeypatch)
+
+    await stats_module.platform_summary(db=object())  # type: ignore[arg-type]
+    stats_module._cache.stored_at -= stats_module.CACHE_SECONDS + 1
+    await stats_module.platform_summary(db=object())  # type: ignore[arg-type]
+
+    assert len(calls) == 2
+
+
+@pytest.mark.anyio
+async def test_simultaneous_requests_trigger_only_one_query(monkeypatch) -> None:
+    calls = count_queries(monkeypatch)
+
+    await asyncio.gather(*(stats_module.platform_summary(db=object()) for _ in range(10)))  # type: ignore[arg-type]
+
+    assert len(calls) == 1
