@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python:
+    name: Python (lint and tests)
+    runs-on: ubuntu-latest
+    env:
+      RIFTHUB_DATABASE_URL: postgresql+asyncpg://user:pass@127.0.0.1:5432/rifthub_ci
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - run: uv sync --all-packages
+      - run: uv run --package rifthub-api ruff check apps packages scripts
+      - run: uv run --package rifthub-api pytest apps/api/tests
+      - run: uv run --package rifthub-worker pytest apps/worker/tests
+
+  web:
+    name: Web (build, types and tests)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run --workspace @rifthub/web build
+      - run: npx tsc --noEmit -p apps/web
+      - run: npm run --workspace @rifthub/web test
