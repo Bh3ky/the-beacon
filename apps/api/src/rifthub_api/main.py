@@ -20,6 +20,7 @@ from rifthub_backend.moderation import ModerationError
 from rifthub_backend.reads import ReadError
 from rifthub_backend.voting import VotingError
 
+from rifthub_api.body_limit import MaxBodySizeMiddleware
 from rifthub_api.errors import (
     ApiError,
     api_error_handler,
@@ -64,6 +65,7 @@ def create_app() -> FastAPI:
             logger.info("Stopped RiftHub API")
 
     app = FastAPI(title="RiftHub API", lifespan=lifespan)
+    app.add_middleware(MaxBodySizeMiddleware)
     app.add_exception_handler(ApiError, api_error_handler)
     app.add_exception_handler(AuthError, auth_error_handler)
     app.add_exception_handler(CreationError, creation_error_handler)

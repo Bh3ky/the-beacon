@@ -4,6 +4,15 @@ import { getApiBaseUrl } from "@/lib/api/client";
 
 export const dynamic = "force-dynamic";
 
+const MAX_BODY_BYTES = 256 * 1024;
+
+function bodyTooLarge() {
+  return Response.json(
+    { error: { code: "payload_too_large", message: "Request body is too large.", details: null } },
+    { status: 413 },
+  );
+}
+
 async function proxy(request: NextRequest, context: { params: Promise<{ path: string[] }> }) {
   const { path } = await context.params;
   const targetPath = path.join("/");
@@ -32,10 +41,16 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
 
 
   const method = request.method.toUpperCase();
+  if (Number(request.headers.get("content-length") ?? 0) > MAX_BODY_BYTES) {
+    return bodyTooLarge();
+  }
   const body =
     method === "GET" || method === "HEAD" || method === "OPTIONS"
       ? undefined
       : await request.text();
+  if (body !== undefined && Buffer.byteLength(body) > MAX_BODY_BYTES) {
+    return bodyTooLarge();
+  }
 
   const upstream = await fetch(targetUrl, {
     method,
