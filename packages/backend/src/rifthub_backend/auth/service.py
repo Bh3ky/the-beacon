@@ -37,6 +37,8 @@ logger = logging.getLogger(__name__)
 
 _DUMMY_PASSWORD_HASH = hash_password("dummy-password-for-timing-parity")
 ACTIVE_VERIFICATION_TOKEN_CONSTRAINT_NAME = "uq_user_verification_tokens_active_user_id"
+USERNAME_CONSTRAINT_NAME = "uq_users_username"
+EMAIL_CONSTRAINT_NAME = "uq_users_email"
 VERIFICATION_DELIVERY_PENDING = "pending"
 VERIFICATION_DELIVERY_SENT = "sent"
 VERIFICATION_DELIVERY_FAILED = "failed"
@@ -269,7 +271,16 @@ async def register_user(
         status=UserStatus.PENDING,
     )
     db.add(user)
-    await db.flush()
+    try:
+        await db.flush()
+    except IntegrityError as exc:
+        await db.rollback()
+        constraint_name = getattr(getattr(exc.orig, "diag", None), "constraint_name", None)
+        if constraint_name == USERNAME_CONSTRAINT_NAME:
+            raise AuthError(409, "duplicate_username", "Username is already in use.") from exc
+        if constraint_name == EMAIL_CONSTRAINT_NAME:
+            raise AuthError(409, "duplicate_email", "Email is already in use.") from exc
+        raise
 
     token_row, raw_verification_token, expires_at = await _create_verification_token(
         db=db,

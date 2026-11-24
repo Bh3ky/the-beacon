@@ -9,6 +9,7 @@ import pytest
 import rifthub_backend.auth.service as service_module
 from rifthub_backend.auth.delivery import VerificationDeliveryResult
 from rifthub_backend.config import Settings
+from sqlalchemy.exc import IntegrityError
 
 
 def make_settings() -> Settings:
@@ -133,3 +134,39 @@ async def test_login_hashes_password_off_the_event_loop_thread(monkeypatch) -> N
 
     assert seen_threads
     assert all(thread is not main_thread for thread in seen_threads)
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(
+    ("constraint_name", "expected_code"),
+    [("uq_users_username", "duplicate_username"), ("uq_users_email", "duplicate_email")],
+)
+async def test_register_turns_a_duplicate_insert_race_into_409(
+    constraint_name, expected_code
+) -> None:
+    async def no_existing_user(_statement):
+        return None
+
+    async def failing_flush() -> None:
+        orig = SimpleNamespace(diag=SimpleNamespace(constraint_name=constraint_name))
+        raise IntegrityError("INSERT INTO users", {}, orig)  # type: ignore[arg-type]
+
+    db = SimpleNamespace(
+        scalar=no_existing_user,
+        add=lambda _row: None,
+        flush=failing_flush,
+        rollback=AsyncMock(),
+    )
+
+    with pytest.raises(service_module.AuthError) as exc_info:
+        await service_module.register_user(
+            db=db,  # type: ignore[arg-type]
+            settings=make_settings(),
+            username="avery",
+            email="avery@example.com",
+            password="a-strong-password-123",
+        )
+
+    assert exc_info.value.status_code == 409
+    assert exc_info.value.code == expected_code
+    db.rollback.assert_awaited_once()
