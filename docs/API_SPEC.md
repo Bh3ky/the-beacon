@@ -55,7 +55,7 @@ This document is the full design. The routes below exist today, under `/v1`. Any
 
 | Area | Implemented routes |
 |---|---|
-| Auth | `POST /auth/register`, `/auth/verify`, `/auth/login`, `/auth/logout`, `/auth/resend-verification`; `GET /auth/me` |
+| Auth | `POST /auth/register`, `/auth/verify`, `/auth/login`, `/auth/logout`, `/auth/resend-verification`, `/auth/password-reset/request`, `/auth/password-reset/confirm`; `GET /auth/me` |
 | Feeds | `GET /feeds/top`, `/feeds/new`, `/feeds/ask`, `/feeds/show`, `/feeds/jobs` |
 | Posts | `POST /posts`; `GET /posts/{id}`; `GET` and `POST /posts/{id}/comments`; `POST` and `DELETE /posts/{id}/vote` |
 | Comments | `POST` and `DELETE /comments/{id}/vote` |
@@ -212,6 +212,8 @@ All errors should use a consistent envelope.
 | `account_pending_verification` | account exists but is not yet verified |
 | `verification_token_invalid` | verification token is invalid |
 | `verification_token_expired` | verification token has expired |
+| `password_reset_token_invalid` | reset link is unknown, already used or replaced, or the account is not active |
+| `password_reset_token_expired` | reset link has expired |
 
 
 # 5. Response Envelope Strategy
@@ -679,6 +681,75 @@ Return current authenticated user.
 
 If the request is authenticated but the CSRF cookie is missing, the server may refresh the CSRF cookie in the response.
 
+
+## 8.7 Request password reset
+
+**Endpoint**
+
+```http
+POST /auth/password-reset/request
+```
+
+**Request body**
+
+```JSON
+{
+  "email": "b@example.com"
+}
+```
+
+**Success response**
+
+**204 No Content**
+
+Rules:
+
+- the response is `204` whether or not an active account exists
+- only active accounts are sent an email, and it is sent after the response
+- a new request invalidates the account's earlier reset link
+- the link opens `/reset-password?token=...` on the frontend and expires after 30 minutes by default (`RIFTHUB_PASSWORD_RESET_TOKEN_TTL_MINUTES`)
+- limited to 3 per hour per IP and 3 per hour per email
+
+**Failure cases**
+
+- `422 invalid email`
+- `429 rate limited`
+
+## 8.8 Confirm password reset
+
+**Endpoint**
+
+```http
+POST /auth/password-reset/confirm
+```
+
+**Request body**
+
+```JSON
+{
+  "token": "<token from the emailed link>",
+  "password": "new-strong-password-here"
+}
+```
+
+**Success response**
+
+**204 No Content**
+
+Rules:
+
+- the password must be 12 to 256 characters; a rejected password does not use up the link
+- a link works once
+- all of the account's sessions are deleted
+- the server does not sign the user in or set cookies
+- limited to 10 per hour per IP
+
+**Failure cases**
+
+- `400 password_reset_token_invalid`
+- `400 password_reset_token_expired`
+- `422 invalid password`
+- `429 rate limited`
 
 # 9. User Endpoints
 

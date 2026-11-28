@@ -42,7 +42,7 @@ discover  ->  vote  ->  discuss  ->  submit
 
 | Area | What is built |
 |---|---|
-| **Accounts** | Registration, email verification, login and logout, cookie sessions, CSRF protection, resend-verification flow |
+| **Accounts** | Registration, email verification, login and logout, cookie sessions, CSRF protection, resend-verification flow, password reset by email |
 | **Posts** | Link, text (Ask) and job posts across 9 categories; URL normalization and duplicate-link detection; jobs expire after 30 days |
 | **Feeds** | Top, New, Ask, Show and Jobs feeds with cursor pagination |
 | **Voting** | Up and down votes on posts and comments, undo, self-vote protection, atomic counters |
@@ -97,7 +97,8 @@ flowchart LR
 | Passwords | PBKDF2-HMAC-SHA256, 600,000 iterations, per-password salt |
 | Sessions | Opaque tokens stored hashed; `HttpOnly`, `Secure` (outside dev) and `SameSite=Lax` cookies; idle and absolute expiry |
 | CSRF | Per-session HMAC token checked on every authenticated write, plus `Origin` validation |
-| Rate limiting | Login, registration and verification limited per IP and per email; posting, commenting, voting and flagging limited per user. In-memory in development, Redis in production |
+| Password reset | Single-use links, stored hashed, that expire after 30 minutes; a reset ends all of the account's sessions; the request endpoint gives the same response whether or not the account exists |
+| Rate limiting | Login, registration, verification and password reset are rate limited (per IP, and per email where an email is submitted); posting, commenting, voting and flagging limited per user. In-memory in development, Redis in production |
 | Input limits | Length limits on titles, bodies, comments and flag notes; invalid input returns a structured `422` |
 | Roles | `user`, `moderator`, `admin`, enforced server-side on every moderation route |
 | Config | In production the API refuses to start unless secrets, HTTPS origins and email delivery are configured |
@@ -136,7 +137,7 @@ npm run worker:dev   # Worker (optional: ranking, snapshots, RSS polling)
 
 For the worker's locks and feed snapshots, set `RIFTHUB_REDIS_URL=redis://127.0.0.1:6379/0` in `.env`.
 
-**Email in development.** Verification emails are not sent. The API prints the verification link in its terminal output; open it to verify the account.
+**Email in development.** With the default `log` delivery mode, no email is sent. The API prints each email, including the verification or password reset link, in its terminal output.
 
 **Create an admin.** Register an account, then promote it:
 
@@ -187,7 +188,7 @@ Some design documents describe planned features. Where the code differs, the doc
 ## Known limitations
 
 - No post or comment editing or deletion by authors.
-- No password reset, public user profiles, search, or topic tag pages.
+- No public user profiles, search, or topic tag pages.
 - No new-account throttling or automated vote-manipulation detection.
 - Link reposts are blocked for as long as the original post is active; there is no repost window.
 - No real-database or end-to-end tests, and no CI pipeline yet.
@@ -198,7 +199,6 @@ Some design documents describe planned features. Where the code differs, the doc
 | Item | Status |
 |---|---|
 | Post and comment editing | Planned |
-| Password reset | Planned |
 | User profiles | Planned |
 | Search | Planned |
 | CI and integration tests against PostgreSQL | Planned |

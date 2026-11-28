@@ -122,7 +122,7 @@ Limits of this evidence: the Python tests run against fakes, so real-database be
 
 ### Product gaps (documented, not bugs)
 
-No post or comment editing or deletion, password reset, user profiles, search, topic tag pages, new-account throttling, or automated vote-manipulation detection. All are listed in the README's known limitations and marked in the specs.
+No post or comment editing or deletion, user profiles, search, topic tag pages, new-account throttling, or automated vote-manipulation detection. All are listed in the README's known limitations and marked in the specs. Password reset was on this list and has since been built; delivery through Resend has not been tested.
 
 ---
 
@@ -131,7 +131,7 @@ No post or comment editing or deletion, password reset, user profiles, search, t
 1. **Deployment target** for each service, and whether the worker runs as a separate service.
 2. **A domain for email and the site.** This unblocks Resend and the production configuration.
 3. **Feed snapshots:** keep and wire in, or remove.
-4. **Whether to build** editing, password reset and profiles before showcasing, or ship with the documented limitations.
+4. **Whether to build** editing and profiles before showcasing, or ship with the documented limitations.
 
 ---
 
