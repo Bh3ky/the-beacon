@@ -18,9 +18,9 @@ from rifthub_backend.models.user import User
 from rifthub_backend.models.verification import UserVerificationToken
 
 from .delivery import (
-    VerificationDeliveryRequest,
+    build_verification_email,
     build_verification_url,
-    get_verification_delivery,
+    get_email_delivery,
 )
 from .security import (
     canonicalize_email,
@@ -165,8 +165,8 @@ async def _dispatch_verification(
     raw_token: str,
     expires_at: datetime,
 ) -> Literal["sent", "failed"]:
-    delivery = get_verification_delivery(settings)
-    request = VerificationDeliveryRequest(
+    delivery = get_email_delivery(settings)
+    email = build_verification_email(
         recipient_email=user.email,
         username=user.username,
         verification_url=build_verification_url(settings=settings, token=raw_token),
@@ -175,7 +175,7 @@ async def _dispatch_verification(
     attempted_at = _utcnow()
 
     try:
-        result = await delivery.send_verification(request)
+        result = await delivery.send(email)
         _apply_delivery_result(
             token_row=token_row,
             attempted_at=attempted_at,

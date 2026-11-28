@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 import rifthub_backend.auth.service as service_module
-from rifthub_backend.auth.delivery import VerificationDeliveryResult
+from rifthub_backend.auth.delivery import EmailDeliveryResult
 from rifthub_backend.config import Settings
 from sqlalchemy.exc import IntegrityError
 
@@ -42,10 +42,10 @@ async def test_dispatch_verification_records_sent_status(monkeypatch) -> None:
     db = AsyncMock()
 
     class FakeDelivery:
-        async def send_verification(self, request):
-            return VerificationDeliveryResult(provider_message_id="msg_123")
+        async def send(self, email):
+            return EmailDeliveryResult(provider_message_id="msg_123")
 
-    monkeypatch.setattr(service_module, "get_verification_delivery", lambda settings: FakeDelivery())
+    monkeypatch.setattr(service_module, "get_email_delivery", lambda settings: FakeDelivery())
     monkeypatch.setattr(service_module, "_utcnow", lambda: now)
 
     status = await service_module._dispatch_verification(
@@ -84,10 +84,10 @@ async def test_dispatch_verification_records_failed_status(monkeypatch) -> None:
     db = AsyncMock()
 
     class FakeDelivery:
-        async def send_verification(self, request):
+        async def send(self, email):
             raise RuntimeError("smtp down")
 
-    monkeypatch.setattr(service_module, "get_verification_delivery", lambda settings: FakeDelivery())
+    monkeypatch.setattr(service_module, "get_email_delivery", lambda settings: FakeDelivery())
     monkeypatch.setattr(service_module, "_utcnow", lambda: now)
 
     status = await service_module._dispatch_verification(
