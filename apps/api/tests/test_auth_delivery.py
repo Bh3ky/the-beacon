@@ -6,6 +6,7 @@ from rifthub_backend.auth.delivery import (
     NoopEmailDelivery,
     OutgoingEmail,
     ResendEmailDelivery,
+    build_password_reset_url,
     build_verification_email,
     build_verification_url,
     get_email_delivery,
@@ -35,6 +36,14 @@ def test_build_verification_url_uses_frontend_base_url() -> None:
     url = build_verification_url(settings=settings, token="opaque token")
 
     assert url == "https://app.example.com/verify?token=opaque+token"
+
+
+def test_build_password_reset_url_points_at_the_reset_page() -> None:
+    settings = make_settings(frontend_base_url="https://app.example.com")
+
+    url = build_password_reset_url(settings=settings, token="opaque token")
+
+    assert url == "https://app.example.com/reset-password?token=opaque+token"
 
 
 def test_get_email_delivery_returns_noop_for_noop_mode() -> None:

@@ -90,6 +90,7 @@ class Settings:
     session_absolute_hours: int = 24
     session_touch_interval_minutes: int = 10
     verification_token_ttl_hours: int = 24
+    password_reset_token_ttl_minutes: int = 30
     verification_delivery_mode: str = "log"
     frontend_base_url: str = "http://localhost:3000"
     verification_from_email: str = "noreply@localhost"
@@ -174,6 +175,7 @@ def get_settings() -> Settings:
         session_absolute_hours=_env_int("RIFTHUB_SESSION_ABSOLUTE_HOURS", 24),
         session_touch_interval_minutes=_env_int("RIFTHUB_SESSION_TOUCH_INTERVAL_MINUTES", 10),
         verification_token_ttl_hours=_env_int("RIFTHUB_VERIFICATION_TOKEN_TTL_HOURS", 24),
+        password_reset_token_ttl_minutes=_env_int("RIFTHUB_PASSWORD_RESET_TOKEN_TTL_MINUTES", 30),
         verification_delivery_mode=os.getenv(
             "RIFTHUB_VERIFICATION_DELIVERY_MODE",
             default_delivery_mode,

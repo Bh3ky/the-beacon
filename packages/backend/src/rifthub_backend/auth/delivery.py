@@ -62,6 +62,35 @@ def build_verification_email(
     )
 
 
+def build_password_reset_url(*, settings: Settings, token: str) -> str:
+    base_url = settings.frontend_base_url.rstrip("/")
+    return f"{base_url}/reset-password?{urlencode({'token': token})}"
+
+
+def build_password_reset_email(
+    *,
+    recipient_email: str,
+    username: str,
+    reset_url: str,
+    expires_at: datetime,
+) -> OutgoingEmail:
+    return OutgoingEmail(
+        recipient_email=recipient_email,
+        subject="Reset your RiftHub password",
+        text="\n".join(
+            [
+                f"Hi {username},",
+                "",
+                "Choose a new RiftHub password by opening this link:",
+                reset_url,
+                "",
+                f"This link works once and expires at {expires_at.isoformat()}.",
+                "If you did not ask for this, ignore this email. Your password has not changed.",
+            ]
+        ),
+    )
+
+
 class NoopEmailDelivery:
     async def send(self, email: OutgoingEmail) -> EmailDeliveryResult:
         logger.debug("Skipping email delivery to %s", email.recipient_email)
