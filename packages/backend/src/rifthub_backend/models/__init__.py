@@ -5,6 +5,7 @@ from .domain import Domain
 from .flag import Flag
 from .ingestion import IngestionItem
 from .moderation import ModerationAction
+from .password_reset import UserPasswordResetToken
 from .post import Post
 from .session import UserSession
 from .source import Source
@@ -23,6 +24,7 @@ __all__ = [
     "PostVote",
     "Source",
     "User",
+    "UserPasswordResetToken",
     "UserSession",
     "UserVerificationToken",
 ]

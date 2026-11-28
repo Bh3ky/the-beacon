@@ -122,6 +122,19 @@ def test_user_verification_token_delivery_columns_are_present() -> None:
     assert "delivery_error" in verification_tokens.c
 
 
+def test_password_reset_token_table_allows_one_unused_token_per_user() -> None:
+    reset_tokens = Base.metadata.tables["user_password_reset_tokens"]
+    active_token_index = next(
+        index
+        for index in reset_tokens.indexes
+        if index.name == "uq_user_password_reset_tokens_active_user_id"
+    )
+
+    assert active_token_index.unique is True
+    assert active_token_index.dialect_options["postgresql"]["where"] is not None
+    assert reset_tokens.c.token_hash.unique is True
+
+
 def test_user_counter_constraints_are_present() -> None:
     users = Base.metadata.tables["users"]
     constraint_names = {constraint.name for constraint in users.constraints}
