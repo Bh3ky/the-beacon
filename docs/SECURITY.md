@@ -204,6 +204,26 @@ Going over a limit returns `429`. There is no permanent account lockout.
 
 ---
 
+# 3.7 Password Reset
+
+- reset tokens are random, and only their hash is stored
+- a token works once, expires after 30 minutes by default, and is replaced by a newer request
+- each user has at most one unused token, enforced by a database index
+- requesting and confirming a reset lock the user row, so simultaneous requests cannot both use one token
+- login re-reads the password hash under the same lock, so a login that overlaps a reset cannot keep a session
+- a successful reset deletes all of the user's sessions and does not sign the user in
+- only active accounts are sent a reset email
+- the request endpoint returns the same response whether or not the account exists, and sends the email after responding
+
+Known gaps:
+
+- response times may still differ slightly, because only real accounts cause database writes
+- registration reveals whether an email is already in use (`duplicate_email`), and resend verification waits for delivery, so account existence can be learned through those endpoints
+- the email is sent by an in-process background task: it is lost if the API stops first, and delivery failures are only logged
+- someone who knows an email address can use up its reset request limit for up to an hour
+
+---
+
 # 4. Authorization Model
 
 Authorization controls what authenticated users can do.
@@ -275,6 +295,8 @@ Examples:
 | register | 3/hour |
 | resend verification | 3/hour |
 | verify | 10/hour |
+| password reset request | 3/hour per IP and per email |
+| password reset confirm | 10/hour per IP |
 login | 5/min |
 post submission | 5/hour |
 comment creation | 20/min |

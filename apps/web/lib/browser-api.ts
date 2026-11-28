@@ -147,6 +147,25 @@ export async function verifyAccount(payload: {
   });
 }
 
+export async function requestPasswordReset(payload: {
+  email: string;
+}): Promise<void> {
+  return browserApiFetch<void>("auth/password-reset/request", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function confirmPasswordReset(payload: {
+  token: string;
+  password: string;
+}): Promise<void> {
+  return browserApiFetch<void>("auth/password-reset/confirm", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function logout(): Promise<void> {
   return browserApiFetch<void>("auth/logout", {
     method: "POST",

@@ -18,24 +18,20 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True, slots=True)
-class VerificationDeliveryRequest:
+class OutgoingEmail:
     recipient_email: str
-    username: str
-    verification_url: str
-    expires_at: datetime
+    subject: str
+    text: str
 
 
 @dataclass(frozen=True, slots=True)
-class VerificationDeliveryResult:
+class EmailDeliveryResult:
     provider_message_id: str | None = None
 
 
-class VerificationDeliveryPort(Protocol):
-    async def send_verification(
-        self,
-        request: VerificationDeliveryRequest,
-    ) -> VerificationDeliveryResult:
-        """Send a verification message to the target user."""
+class EmailDeliveryPort(Protocol):
+    async def send(self, email: OutgoingEmail) -> EmailDeliveryResult:
+        """Send one email."""
 
 
 def build_verification_url(*, settings: Settings, token: str) -> str:
@@ -43,30 +39,76 @@ def build_verification_url(*, settings: Settings, token: str) -> str:
     return f"{base_url}/verify?{urlencode({'token': token})}"
 
 
-class NoopVerificationDelivery:
-    async def send_verification(
-        self,
-        request: VerificationDeliveryRequest,
-    ) -> VerificationDeliveryResult:
-        logger.debug("Skipping verification delivery for %s", request.recipient_email)
-        return VerificationDeliveryResult()
+def build_verification_email(
+    *,
+    recipient_email: str,
+    username: str,
+    verification_url: str,
+    expires_at: datetime,
+) -> OutgoingEmail:
+    return OutgoingEmail(
+        recipient_email=recipient_email,
+        subject="Verify your RiftHub account",
+        text="\n".join(
+            [
+                f"Hi {username},",
+                "",
+                "Complete your RiftHub account verification by opening this link:",
+                verification_url,
+                "",
+                f"This link expires at {expires_at.isoformat()}.",
+            ]
+        ),
+    )
 
 
-class LoggingVerificationDelivery:
-    async def send_verification(
-        self,
-        request: VerificationDeliveryRequest,
-    ) -> VerificationDeliveryResult:
+def build_password_reset_url(*, settings: Settings, token: str) -> str:
+    base_url = settings.frontend_base_url.rstrip("/")
+    return f"{base_url}/reset-password?{urlencode({'token': token})}"
+
+
+def build_password_reset_email(
+    *,
+    recipient_email: str,
+    username: str,
+    reset_url: str,
+    expires_at: datetime,
+) -> OutgoingEmail:
+    return OutgoingEmail(
+        recipient_email=recipient_email,
+        subject="Reset your RiftHub password",
+        text="\n".join(
+            [
+                f"Hi {username},",
+                "",
+                "Choose a new RiftHub password by opening this link:",
+                reset_url,
+                "",
+                f"This link works once and expires at {expires_at.isoformat()}.",
+                "If you did not ask for this, ignore this email. Your password has not changed.",
+            ]
+        ),
+    )
+
+
+class NoopEmailDelivery:
+    async def send(self, email: OutgoingEmail) -> EmailDeliveryResult:
+        logger.debug("Skipping email delivery to %s", email.recipient_email)
+        return EmailDeliveryResult()
+
+
+class LoggingEmailDelivery:
+    async def send(self, email: OutgoingEmail) -> EmailDeliveryResult:
         logger.info(
-            "Verification link for %s (%s): %s",
-            request.username,
-            request.recipient_email,
-            request.verification_url,
+            "Email to %s: %s\n%s",
+            email.recipient_email,
+            email.subject,
+            email.text,
         )
-        return VerificationDeliveryResult()
+        return EmailDeliveryResult()
 
 
-class MailpitVerificationDelivery:
+class MailpitEmailDelivery:
     def __init__(
         self,
         *,
@@ -80,38 +122,24 @@ class MailpitVerificationDelivery:
         self._port = port
         self._starttls = starttls
 
-    async def send_verification(
-        self,
-        request: VerificationDeliveryRequest,
-    ) -> VerificationDeliveryResult:
-        return await asyncio.to_thread(self._send_sync, request)
+    async def send(self, email: OutgoingEmail) -> EmailDeliveryResult:
+        return await asyncio.to_thread(self._send_sync, email)
 
-    def _send_sync(self, request: VerificationDeliveryRequest) -> VerificationDeliveryResult:
+    def _send_sync(self, email: OutgoingEmail) -> EmailDeliveryResult:
         message = EmailMessage()
-        message["Subject"] = "Verify your RiftHub account"
+        message["Subject"] = email.subject
         message["From"] = self._from_email
-        message["To"] = request.recipient_email
-        message.set_content(
-            "\n".join(
-                [
-                    f"Hi {request.username},",
-                    "",
-                    "Complete your RiftHub account verification by opening this link:",
-                    request.verification_url,
-                    "",
-                    f"This link expires at {request.expires_at.isoformat()}.",
-                ]
-            )
-        )
+        message["To"] = email.recipient_email
+        message.set_content(email.text)
 
         with smtplib.SMTP(self._host, self._port, timeout=10) as smtp:
             if self._starttls:
                 smtp.starttls()
             smtp.send_message(message)
-        return VerificationDeliveryResult()
+        return EmailDeliveryResult()
 
 
-class ResendVerificationDelivery:
+class ResendEmailDelivery:
     _endpoint = "https://api.resend.com/emails"
 
     def __init__(
@@ -123,27 +151,15 @@ class ResendVerificationDelivery:
         self._api_key = api_key
         self._from_email = from_email
 
-    async def send_verification(
-        self,
-        request: VerificationDeliveryRequest,
-    ) -> VerificationDeliveryResult:
-        return await asyncio.to_thread(self._send_sync, request)
+    async def send(self, email: OutgoingEmail) -> EmailDeliveryResult:
+        return await asyncio.to_thread(self._send_sync, email)
 
-    def _send_sync(self, request: VerificationDeliveryRequest) -> VerificationDeliveryResult:
+    def _send_sync(self, email: OutgoingEmail) -> EmailDeliveryResult:
         payload = {
             "from": self._from_email,
-            "to": [request.recipient_email],
-            "subject": "Verify your RiftHub account",
-            "text": "\n".join(
-                [
-                    f"Hi {request.username},",
-                    "",
-                    "Complete your RiftHub account verification by opening this link:",
-                    request.verification_url,
-                    "",
-                    f"This link expires at {request.expires_at.isoformat()}.",
-                ]
-            ),
+            "to": [email.recipient_email],
+            "subject": email.subject,
+            "text": email.text,
         }
         body = json.dumps(payload).encode("utf-8")
         request_obj = urllib_request.Request(
@@ -174,7 +190,7 @@ class ResendVerificationDelivery:
             try:
                 parsed = json.loads(raw_body)
             except json.JSONDecodeError:
-                logger.warning("Resend returned non-JSON body for verification delivery.")
+                logger.warning("Resend returned non-JSON body for email delivery.")
             else:
                 if isinstance(parsed, dict):
                     if isinstance(parsed.get("id"), str):
@@ -182,21 +198,21 @@ class ResendVerificationDelivery:
                     elif isinstance(parsed.get("data"), dict) and isinstance(parsed["data"].get("id"), str):
                         provider_message_id = parsed["data"]["id"]
 
-        return VerificationDeliveryResult(provider_message_id=provider_message_id)
+        return EmailDeliveryResult(provider_message_id=provider_message_id)
 
 
-def get_verification_delivery(settings: Settings) -> VerificationDeliveryPort:
+def get_email_delivery(settings: Settings) -> EmailDeliveryPort:
     mode = settings.verification_delivery_mode
     if mode == "noop":
-        return NoopVerificationDelivery()
+        return NoopEmailDelivery()
     if mode == "log":
         if settings.environment not in {"development", "test"}:
             raise ConfigError(
                 "RIFTHUB_VERIFICATION_DELIVERY_MODE=log is only allowed in development or test."
             )
-        return LoggingVerificationDelivery()
+        return LoggingEmailDelivery()
     if mode == "mailpit":
-        return MailpitVerificationDelivery(
+        return MailpitEmailDelivery(
             from_email=settings.verification_from_email,
             host=settings.verification_smtp_host,
             port=settings.verification_smtp_port,
@@ -207,7 +223,7 @@ def get_verification_delivery(settings: Settings) -> VerificationDeliveryPort:
             raise ConfigError(
                 "RIFTHUB_RESEND_API_KEY is required when RIFTHUB_VERIFICATION_DELIVERY_MODE=resend."
             )
-        return ResendVerificationDelivery(
+        return ResendEmailDelivery(
             api_key=settings.resend_api_key,
             from_email=settings.verification_from_email,
         )

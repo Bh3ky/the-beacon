@@ -2,12 +2,14 @@ import asyncio
 from datetime import UTC, datetime
 
 from rifthub_backend.auth.delivery import (
-    LoggingVerificationDelivery,
-    NoopVerificationDelivery,
-    ResendVerificationDelivery,
-    VerificationDeliveryRequest,
+    LoggingEmailDelivery,
+    NoopEmailDelivery,
+    OutgoingEmail,
+    ResendEmailDelivery,
+    build_password_reset_url,
+    build_verification_email,
     build_verification_url,
-    get_verification_delivery,
+    get_email_delivery,
 )
 from rifthub_backend.config import ConfigError, Settings
 
@@ -36,20 +38,28 @@ def test_build_verification_url_uses_frontend_base_url() -> None:
     assert url == "https://app.example.com/verify?token=opaque+token"
 
 
-def test_get_verification_delivery_returns_noop_for_noop_mode() -> None:
-    delivery = get_verification_delivery(make_settings(environment="test", verification_delivery_mode="noop"))
+def test_build_password_reset_url_points_at_the_reset_page() -> None:
+    settings = make_settings(frontend_base_url="https://app.example.com")
 
-    assert isinstance(delivery, NoopVerificationDelivery)
+    url = build_password_reset_url(settings=settings, token="opaque token")
 
-
-def test_get_verification_delivery_returns_logging_adapter_in_development() -> None:
-    delivery = get_verification_delivery(make_settings())
-
-    assert isinstance(delivery, LoggingVerificationDelivery)
+    assert url == "https://app.example.com/reset-password?token=opaque+token"
 
 
-def test_get_verification_delivery_returns_resend_adapter_when_configured() -> None:
-    delivery = get_verification_delivery(
+def test_get_email_delivery_returns_noop_for_noop_mode() -> None:
+    delivery = get_email_delivery(make_settings(environment="test", verification_delivery_mode="noop"))
+
+    assert isinstance(delivery, NoopEmailDelivery)
+
+
+def test_get_email_delivery_returns_logging_adapter_in_development() -> None:
+    delivery = get_email_delivery(make_settings())
+
+    assert isinstance(delivery, LoggingEmailDelivery)
+
+
+def test_get_email_delivery_returns_resend_adapter_when_configured() -> None:
+    delivery = get_email_delivery(
         make_settings(
             environment="production",
             verification_delivery_mode="resend",
@@ -58,25 +68,25 @@ def test_get_verification_delivery_returns_resend_adapter_when_configured() -> N
         )
     )
 
-    assert isinstance(delivery, ResendVerificationDelivery)
+    assert isinstance(delivery, ResendEmailDelivery)
 
 
-def test_get_verification_delivery_requires_api_key_for_resend_mode() -> None:
+def test_get_email_delivery_requires_api_key_for_resend_mode() -> None:
     settings = make_settings(environment="production", verification_delivery_mode="resend")
 
     try:
-        get_verification_delivery(settings)
+        get_email_delivery(settings)
     except ConfigError as exc:
         assert "RIFTHUB_RESEND_API_KEY" in str(exc)
     else:  # pragma: no cover - defensive failure branch
         raise AssertionError("Expected resend delivery mode to require an API key.")
 
 
-def test_get_verification_delivery_rejects_log_mode_outside_dev_and_test() -> None:
+def test_get_email_delivery_rejects_log_mode_outside_dev_and_test() -> None:
     settings = make_settings(environment="production", verification_delivery_mode="log")
 
     try:
-        get_verification_delivery(settings)
+        get_email_delivery(settings)
     except ConfigError as exc:
         assert "only allowed in development or test" in str(exc)
     else:  # pragma: no cover - defensive failure branch
@@ -84,17 +94,29 @@ def test_get_verification_delivery_rejects_log_mode_outside_dev_and_test() -> No
 
 
 def test_noop_delivery_returns_empty_result() -> None:
-    delivery = NoopVerificationDelivery()
+    delivery = NoopEmailDelivery()
 
     delivery_result = asyncio.run(
-        delivery.send_verification(
-            VerificationDeliveryRequest(
+        delivery.send(
+            OutgoingEmail(
                 recipient_email="bheki@example.com",
-                username="bheki",
-                verification_url="http://localhost:3000/verify?token=abc",
-                expires_at=datetime.now(UTC),
+                subject="Hello",
+                text="Hi bheki",
             )
         )
     )
 
     assert delivery_result.provider_message_id is None
+
+
+def test_build_verification_email_includes_subject_and_link() -> None:
+    email = build_verification_email(
+        recipient_email="bheki@example.com",
+        username="bheki",
+        verification_url="http://localhost:3000/verify?token=abc",
+        expires_at=datetime.now(UTC),
+    )
+
+    assert email.recipient_email == "bheki@example.com"
+    assert email.subject == "Verify your RiftHub account"
+    assert "http://localhost:3000/verify?token=abc" in email.text

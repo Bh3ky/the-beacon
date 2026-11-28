@@ -81,6 +81,14 @@ export function LoginForm({ nextHref, registeredEmail }: LoginFormProps) {
           value={password}
           onChange={setPassword}
           placeholder="••••••••"
+          hint={
+            <Link
+              href="/forgot-password"
+              className="transition-colors hover:text-(--color-accent)"
+            >
+              forgot password?
+            </Link>
+          }
         />
 
         {formError ? (

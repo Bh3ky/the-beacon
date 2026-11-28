@@ -13,14 +13,18 @@ from sqlalchemy.orm import joinedload
 
 from rifthub_backend.config import Settings
 from rifthub_backend.db.types import UserStatus
+from rifthub_backend.models.password_reset import UserPasswordResetToken
 from rifthub_backend.models.session import UserSession
 from rifthub_backend.models.user import User
 from rifthub_backend.models.verification import UserVerificationToken
 
 from .delivery import (
-    VerificationDeliveryRequest,
+    OutgoingEmail,
+    build_password_reset_email,
+    build_password_reset_url,
+    build_verification_email,
     build_verification_url,
-    get_verification_delivery,
+    get_email_delivery,
 )
 from .security import (
     canonicalize_email,
@@ -30,6 +34,7 @@ from .security import (
     hash_opaque_token,
     hash_password,
     is_valid_email,
+    validate_password,
     verify_password,
 )
 
@@ -165,8 +170,8 @@ async def _dispatch_verification(
     raw_token: str,
     expires_at: datetime,
 ) -> Literal["sent", "failed"]:
-    delivery = get_verification_delivery(settings)
-    request = VerificationDeliveryRequest(
+    delivery = get_email_delivery(settings)
+    email = build_verification_email(
         recipient_email=user.email,
         username=user.username,
         verification_url=build_verification_url(settings=settings, token=raw_token),
@@ -175,7 +180,7 @@ async def _dispatch_verification(
     attempted_at = _utcnow()
 
     try:
-        result = await delivery.send_verification(request)
+        result = await delivery.send(email)
         _apply_delivery_result(
             token_row=token_row,
             attempted_at=attempted_at,
@@ -387,6 +392,111 @@ async def resend_verification(
     )
 
 
+async def request_password_reset(
+    *,
+    db: AsyncSession,
+    settings: Settings,
+    email: str,
+) -> OutgoingEmail | None:
+    """Create a reset token and return the email to send.
+
+    Returns None when no email should go out. The caller must respond the same
+    way in both cases, and send the email only after responding.
+    """
+    if not is_valid_email(email):
+        raise AuthError(422, "validation_error", "Email address is invalid.")
+
+    try:
+        canonical_email = canonicalize_email(email)
+    except ValueError as exc:
+        raise AuthError(422, "validation_error", str(exc)) from exc
+
+    # Every change to a user's reset tokens happens while holding this lock.
+    user = await db.scalar(select(User).where(User.email == canonical_email).with_for_update())
+    if user is None or user.status is not UserStatus.ACTIVE:
+        return None
+
+    now = _utcnow()
+    expires_at = now + timedelta(minutes=settings.password_reset_token_ttl_minutes)
+    raw_token = generate_opaque_token()
+
+    await db.execute(
+        delete(UserPasswordResetToken).where(UserPasswordResetToken.user_id == user.id)
+    )
+    db.add(
+        UserPasswordResetToken(
+            user_id=user.id,
+            token_hash=hash_opaque_token(raw_token),
+            expires_at=expires_at,
+            created_at=now,
+        )
+    )
+    await db.commit()
+
+    return build_password_reset_email(
+        recipient_email=user.email,
+        username=user.username,
+        reset_url=build_password_reset_url(settings=settings, token=raw_token),
+        expires_at=expires_at,
+    )
+
+
+async def send_password_reset_email(*, settings: Settings, email: OutgoingEmail) -> None:
+    try:
+        await get_email_delivery(settings).send(email)
+    except Exception:
+        # Nobody is waiting for this result, so the log is the only record.
+        logger.exception("Password reset delivery failed for %s", email.recipient_email)
+
+
+def _invalid_reset_token() -> AuthError:
+    return AuthError(400, "password_reset_token_invalid", "Password reset link is invalid.")
+
+
+async def reset_password(
+    *,
+    db: AsyncSession,
+    settings: Settings,
+    token: str,
+    new_password: str,
+) -> None:
+    try:
+        validate_password(new_password)
+    except ValueError as exc:
+        raise AuthError(422, "validation_error", str(exc)) from exc
+
+    token_hash = hash_opaque_token(token)
+    user_id = await db.scalar(
+        select(UserPasswordResetToken.user_id).where(
+            UserPasswordResetToken.token_hash == token_hash
+        )
+    )
+    if user_id is None:
+        raise _invalid_reset_token()
+
+    user = await db.scalar(select(User).where(User.id == user_id).with_for_update())
+    # Read the token only after taking the lock: another request may have just
+    # used or replaced it while we were waiting.
+    token_row = await db.scalar(
+        select(UserPasswordResetToken).where(UserPasswordResetToken.token_hash == token_hash)
+    )
+    if token_row is None or token_row.consumed_at is not None:
+        raise _invalid_reset_token()
+    if user is None or user.status is not UserStatus.ACTIVE:
+        raise _invalid_reset_token()
+
+    now = _utcnow()
+    if now >= token_row.expires_at:
+        raise AuthError(400, "password_reset_token_expired", "Password reset link has expired.")
+
+    user.password_hash = await asyncio.to_thread(hash_password, new_password)
+    token_row.consumed_at = now
+    await db.execute(delete(UserSession).where(UserSession.user_id == user.id))
+    await db.commit()
+
+    logger.info("Password reset for %s", user.username)
+
+
 async def login_user(
     *,
     db: AsyncSession,
@@ -416,6 +526,14 @@ async def login_user(
         )
     if user.status in {UserStatus.SUSPENDED, UserStatus.BANNED}:
         raise AuthError(403, "forbidden", "Account is suspended or banned.")
+
+    # A password reset may have finished while we were checking the old password.
+    # Lock the user so a reset can't slip in before the session is saved.
+    current_hash = await db.scalar(
+        select(User.password_hash).where(User.id == user.id).with_for_update()
+    )
+    if current_hash != user.password_hash:
+        raise AuthError(401, "invalid_credentials", "Invalid credentials.")
 
     now = _utcnow()
     user.last_active_at = now

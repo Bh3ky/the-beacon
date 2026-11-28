@@ -758,6 +758,27 @@ Because registration is verification-first in v1, a verification token table is 
 - expired or consumed tokens must not activate accounts
 - this table is auth-owned and should be introduced with the Phase 3 auth slice
 
+## 8.2.1 `user_password_reset_tokens`
+
+Holds the single-use tokens behind password reset links.
+
+**Columns**
+
+- `id`
+- `user_id`
+- `token_hash`
+- `expires_at`
+- `consumed_at`
+- `created_at`
+
+**Notes**
+
+- store only a hash of the token, never the raw token
+- `token_hash` is unique
+- a partial unique index on `user_id` where `consumed_at IS NULL` allows one unused token per user
+- requesting a new token deletes the user's earlier ones
+- delivery outcomes are not stored here, unlike verification tokens
+
 ## 8.3 `post_score_history`
 
 Useful for observability and ranking tuning.

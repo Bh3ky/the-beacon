@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Request, Response, status
+from fastapi import APIRouter, BackgroundTasks, Request, Response, status
 from pydantic import BaseModel, ConfigDict
 from rifthub_backend.auth.security import canonicalize_email
 from rifthub_backend.auth.service import (
@@ -13,6 +13,9 @@ from rifthub_backend.auth.service import (
     login_user,
     logout_session,
     register_user,
+    request_password_reset,
+    reset_password,
+    send_password_reset_email,
     verify_account,
 )
 from rifthub_backend.auth.service import (
@@ -67,6 +70,15 @@ class LoginRequest(BaseModel):
 
 class ResendVerificationRequest(BaseModel):
     email: str
+
+
+class PasswordResetRequest(BaseModel):
+    email: str
+
+
+class PasswordResetConfirmRequest(BaseModel):
+    token: str
+    password: str
 
 
 class RegisterResponse(BaseModel):
@@ -286,6 +298,67 @@ async def login(
     )
     _set_auth_cookies(response=response, settings=settings, auth_result=result)
     return AuthenticatedResponse(user=_serialize_user(result.user))
+
+
+@router.post("/password-reset/request", status_code=status.HTTP_204_NO_CONTENT)
+async def password_reset_request(
+    payload: PasswordResetRequest,
+    request: Request,
+    response: Response,
+    background_tasks: BackgroundTasks,
+    db: DbSession,
+    settings: AppSettings,
+) -> Response:
+    client_ip = _client_ip(request, settings)
+    await rate_limiter.check(
+        key=f"password-reset:ip:{client_ip}",
+        limit=3,
+        window_seconds=60 * 60,
+        message="Too many password reset requests. Try again later.",
+    )
+    email_key = payload.email.strip().lower()
+    try:
+        email_key = canonicalize_email(payload.email)
+    except ValueError:
+        pass
+    # Counted whether or not the account exists, so a 429 reveals nothing.
+    await rate_limiter.check(
+        key=f"password-reset:email:{email_key}",
+        limit=3,
+        window_seconds=60 * 60,
+        message="Too many password reset requests. Try again later.",
+    )
+    email = await request_password_reset(db=db, settings=settings, email=payload.email)
+    if email is not None:
+        # Sent after the response, so response time doesn't include the email provider.
+        background_tasks.add_task(send_password_reset_email, settings=settings, email=email)
+    response.status_code = status.HTTP_204_NO_CONTENT
+    return response
+
+
+@router.post("/password-reset/confirm", status_code=status.HTTP_204_NO_CONTENT)
+async def password_reset_confirm(
+    payload: PasswordResetConfirmRequest,
+    request: Request,
+    response: Response,
+    db: DbSession,
+    settings: AppSettings,
+) -> Response:
+    client_ip = _client_ip(request, settings)
+    await rate_limiter.check(
+        key=f"password-reset-confirm:ip:{client_ip}",
+        limit=10,
+        window_seconds=60 * 60,
+        message="Too many password reset attempts. Try again later.",
+    )
+    await reset_password(
+        db=db,
+        settings=settings,
+        token=payload.token,
+        new_password=payload.password,
+    )
+    response.status_code = status.HTTP_204_NO_CONTENT
+    return response
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)

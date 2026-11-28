@@ -18,6 +18,7 @@ if TYPE_CHECKING:
     from .comment import Comment
     from .flag import Flag
     from .moderation import ModerationAction
+    from .password_reset import UserPasswordResetToken
     from .post import Post
     from .session import UserSession
     from .verification import UserVerificationToken
@@ -75,5 +76,8 @@ class User(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
     sessions: Mapped[list[UserSession]] = relationship(back_populates="user")
     verification_tokens: Mapped[list[UserVerificationToken]] = relationship(
+        back_populates="user"
+    )
+    password_reset_tokens: Mapped[list[UserPasswordResetToken]] = relationship(
         back_populates="user"
     )

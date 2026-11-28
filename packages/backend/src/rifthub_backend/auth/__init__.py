@@ -1,6 +1,6 @@
 """Auth service helpers for RiftHub."""
 
-from .delivery import build_verification_url, get_verification_delivery
+from .delivery import build_verification_url, get_email_delivery
 from .security import (
     canonicalize_email,
     canonicalize_username,
@@ -19,7 +19,7 @@ __all__ = [
     "canonicalize_username",
     "generate_csrf_token",
     "generate_opaque_token",
-    "get_verification_delivery",
+    "get_email_delivery",
     "hash_opaque_token",
     "hash_password",
     "is_valid_email",
